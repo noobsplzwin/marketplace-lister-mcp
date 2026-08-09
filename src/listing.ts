@@ -19,7 +19,11 @@ export interface LoosePhoto {
   name: string;
   /** File modification time, ISO 8601. Photos of one item usually cluster. */
   modified: string;
-  /** Seconds since the previous photo in this listing, null for the first. */
+  /**
+   * Seconds between this photo and the previous one, null for the first.
+   * Can be negative when files are not in chronological order, which is itself
+   * a boundary signal: an older photo appearing mid-run came from another batch.
+   */
   secondsAfterPrevious: number | null;
 }
 
@@ -33,7 +37,9 @@ const UNGROUPED_HINT =
   "order they were taken in. Decide where one item ends and the next begins, " +
   "confirm the grouping with the seller, then call create_listing once per " +
   "item passing that item's photo paths in `photos`. A large jump in " +
-  "secondsAfterPrevious often marks a boundary, but the images decide.";
+  "secondsAfterPrevious, in either direction, marks a break between batches " +
+  "and often a new item. Timestamps are only a hint though: copying a folder " +
+  "resets them all to the same second. The images decide.";
 
 function collect(dir: string): string[] {
   return fs
