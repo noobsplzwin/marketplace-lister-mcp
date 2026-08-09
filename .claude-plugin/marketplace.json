@@ -1,0 +1,17 @@
+{
+  "name": "marketplace-lister-mcp",
+  "owner": {
+    "name": "Leo Zheng",
+    "url": "https://github.com/noobsplzwin"
+  },
+  "metadata": {
+    "description": "Post second-hand listings to Facebook Marketplace from a folder of photos, straight from Claude."
+  },
+  "plugins": [
+    {
+      "name": "marketplace-lister",
+      "source": "./",
+      "description": "MCP server plus a listing-copy skill: scans a folder of photos, writes titles and descriptions, fills the real Marketplace form, and publishes once you approve the preview."
+    }
+  ]
+}

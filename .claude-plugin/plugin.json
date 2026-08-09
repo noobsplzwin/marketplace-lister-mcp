@@ -1,0 +1,18 @@
+{
+  "name": "marketplace-lister",
+  "description": "Post listings to Facebook Marketplace from a folder of photos. Bundles the MCP server and a copywriting skill for titles and descriptions that get clicked.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Leo Zheng",
+    "url": "https://github.com/noobsplzwin"
+  },
+  "repository": "https://github.com/noobsplzwin/marketplace-lister-mcp",
+  "license": "MIT",
+  "keywords": [
+    "facebook-marketplace",
+    "listing",
+    "selling",
+    "automation",
+    "playwright"
+  ]
+}

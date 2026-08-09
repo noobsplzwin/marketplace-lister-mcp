@@ -1,0 +1,6 @@
+{
+  "marketplace-lister": {
+    "command": "npx",
+    "args": ["-y", "github:noobsplzwin/marketplace-lister-mcp"]
+  }
+}
