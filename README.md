@@ -1,6 +1,8 @@
-# fb-marketplace-mcp
+# crosslist-mcp
 
-An MCP server that **creates and publishes Facebook Marketplace listings from local photos** — cross-platform (Windows / macOS / Linux), using a dedicated Playwright browser profile.
+An MCP server that **posts second-hand listings from a folder of photos**, driving the real site in a dedicated browser profile. Facebook Marketplace works today; the structure is built so other marketplaces (Kijiji, Craigslist) can be added alongside it.
+
+Runs on Windows, macOS and Linux.
 
 Unlike cookie-scraping tools, this never touches your day-to-day Chrome or any OS keychain. You log in **once** in a dedicated browser window; the session persists in its own profile for all future runs.
 
@@ -25,8 +27,8 @@ Most "Facebook Marketplace" tools are either macOS-only (they decrypt your Chrom
 Requires Node.js 18+.
 
 ```bash
-git clone <this repo>
-cd fb-marketplace-mcp
+git clone https://github.com/noobsplzwin/crosslist-mcp
+cd crosslist-mcp
 npm install        # also downloads Chromium
 npm run build
 ```
@@ -34,7 +36,7 @@ npm run build
 ## Register with Claude Code
 
 ```bash
-claude mcp add fb-marketplace -- node /absolute/path/to/fb-marketplace-mcp/dist/index.js
+claude mcp add crosslist -- node /absolute/path/to/crosslist-mcp/dist/index.js
 ```
 
 Or add to a project `.mcp.json`:
@@ -42,9 +44,9 @@ Or add to a project `.mcp.json`:
 ```json
 {
   "mcpServers": {
-    "fb-marketplace": {
+    "crosslist": {
       "command": "node",
-      "args": ["C:/path/to/fb-marketplace-mcp/dist/index.js"],
+      "args": ["C:/path/to/crosslist-mcp/dist/index.js"],
       "env": { "FB_MCP_CHANNEL": "chrome" }
     }
   }
@@ -106,7 +108,7 @@ Search tips: fewer words find more results. Start broad ("rice cooker"), add the
 
 | Var | Default | Purpose |
 |-----|---------|---------|
-| `FB_MCP_PROFILE_DIR` | `~/.fb-marketplace-mcp/profile` | Where the dedicated login session is stored. |
+| `FB_MCP_PROFILE_DIR` | `~/.crosslist-mcp/facebook` | Where the Facebook login session is stored. One profile per marketplace. |
 | `FB_MCP_CHANNEL` | *(bundled Chromium)* | Set to `chrome` or `msedge` to use an installed browser. Recommended on Windows if bundled Chromium fails to launch (`spawn UNKNOWN`). |
 
 ## Notes & limits
@@ -123,4 +125,6 @@ Facebook has no official personal-Marketplace write API, and its internal GraphQ
 
 ## Roadmap
 
+- **Kijiji support**, then Craigslist. Tools are already namespaced per platform (`fb_login`, `fb_login_status`), so a second marketplace slots in beside the first rather than replacing it.
+- Post one item to several marketplaces in a single call.
 - Category-aware depreciation priors layered on top of `search_comps`, for items too rare to have local comps.

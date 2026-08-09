@@ -10,9 +10,15 @@ import { chromium, type BrowserContext, type Page } from "playwright";
  * once (in the fb_login tool) and the session persists here across restarts.
  */
 
+// One profile per marketplace, so adding another platform later doesn't share
+// or clobber this one's session. Falls back to the pre-rename location so an
+// existing login keeps working without signing in again.
+const LEGACY_DIR = path.join(os.homedir(), ".fb-marketplace-mcp", "profile");
+const DEFAULT_DIR = path.join(os.homedir(), ".crosslist-mcp", "facebook");
+
 const PROFILE_DIR =
   process.env.FB_MCP_PROFILE_DIR ||
-  path.join(os.homedir(), ".fb-marketplace-mcp", "profile");
+  (fs.existsSync(DEFAULT_DIR) || !fs.existsSync(LEGACY_DIR) ? DEFAULT_DIR : LEGACY_DIR);
 
 // Optional: use an installed Chrome/Edge channel instead of bundled Chromium.
 // Bundled Chromium is the default so `npx` works with zero extra setup.

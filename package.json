@@ -1,19 +1,21 @@
 {
-  "name": "fb-marketplace-mcp",
+  "name": "crosslist-mcp",
   "version": "0.1.0",
-  "description": "MCP server that creates and publishes Facebook Marketplace listings from local photos, cross-platform, using a dedicated Playwright browser profile.",
+  "description": "MCP server that posts second-hand listings to online marketplaces from local photo folders. Facebook Marketplace today, built to add more.",
   "license": "MIT",
   "keywords": [
     "mcp",
     "model-context-protocol",
     "facebook-marketplace",
+    "kijiji",
+    "crosslisting",
     "playwright",
     "automation",
     "claude"
   ],
   "type": "module",
   "bin": {
-    "fb-marketplace-mcp": "dist/index.js"
+    "crosslist-mcp": "dist/index.js"
   },
   "files": [
     "dist"
