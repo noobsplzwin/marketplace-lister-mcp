@@ -4,14 +4,15 @@
 
 ## Install
 
+**Hand this repo's URL to Claude Code and ask it to install this.** It reads the steps below and does the whole setup itself. Or run the installer yourself:
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/noobsplzwin/marketplace-lister-mcp/main/install.sh | bash
 ```
 
-That installs the server and registers it with Claude Code. Needs Node.js 18+ and Chrome or Edge (without either, it downloads Chromium instead). On Windows, run it from Git Bash or WSL. Re-run any time to update.
+That clones, builds, and registers the server with Claude Code. Needs Node.js 18+ and Chrome or Edge (with neither, it downloads Chromium instead). On Windows, run it from Git Bash or WSL. Re-run any time to update.
 
-<details>
-<summary>Manual install, or another MCP client</summary>
+### Manual install, or another MCP client
 
 ```bash
 git clone https://github.com/noobsplzwin/marketplace-lister-mcp
@@ -35,7 +36,14 @@ For Claude Desktop or any other client, point its MCP config at the built entry 
 
 No Chrome or Edge? Run `npx playwright install chromium` once.
 
-</details>
+### If you are an agent installing this
+
+Run the `curl | bash` line above. On Windows without Git Bash, use the manual
+block instead, substituting the real absolute path for `$PWD`. Verify with
+`claude mcp list`, which should show `marketplace-lister` connected. Then tell
+the user to say **"log in to Facebook Marketplace"**: a browser window opens,
+they sign in once themselves, and the session persists. Do not ask them for
+their Facebook password; the tools never accept one.
 
 ## Why this exists
 
