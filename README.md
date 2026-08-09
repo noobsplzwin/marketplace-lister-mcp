@@ -91,13 +91,16 @@ Then it moves to the next one. Three items, a handful of messages, and you never
 - **Photos have to be real files in a folder.** An image pasted into the chat window can't be uploaded to Facebook.
 - Grouping works best when you shoot one item at a time, since Claude reads the photos in order and looks for where the subject changes. Photograph the mixer, then the boots, not alternating.
 - The first photo of each item becomes the cover photo, so lead with the clearest full view.
+- **Posting from a folder you've used before?** Ask Claude to check what you already have listed first. It can read your Selling page, and photos tend to linger in a folder long after the thing sold.
 - New listings often say "being reviewed" for a few minutes before going live. That's Facebook, not a problem.
 - If Facebook shows a security check or CAPTCHA, finish it yourself in the window. Claude won't try to get around it.
 - If a browser window won't open, install Google Chrome, or run `npx playwright install chromium` once.
 
-## Which marketplaces
+## Coming later
 
-Facebook Marketplace today. Kijiji and Craigslist are planned, and the design keeps them side by side rather than replacing each other.
+**Suggested prices from the local market.** Right now you name every price. Claude can look up what similar things are going for if you ask, but it stops short of recommending a number, and that is deliberate: an early version did suggest prices and got it wrong in the expensive direction. Searching "rice cooker" turns up mostly $10 units, so it would happily have talked you into selling a $150 cooker for $15. Doing this properly means reading condition and brand off the photos, and weighting what actually sold over what people are merely asking. Until it can do that, the number stays yours.
+
+**Kijiji, then Craigslist.** One folder of photos, posted to several sites in one go, without writing the listing three times.
 
 ## Tools reference
 
