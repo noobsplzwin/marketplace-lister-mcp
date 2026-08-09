@@ -8,7 +8,7 @@ import { scanItems, fillListing, publishListing, listMine, photosInFolder } from
 import { searchComps } from "./comps.js";
 
 const server = new McpServer({
-  name: "crosslist-mcp",
+  name: "marketplace-lister-mcp",
   version: "0.1.0",
 });
 
@@ -165,4 +165,4 @@ process.on("SIGTERM", async () => {
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
-console.error("crosslist-mcp running on stdio");
+console.error("marketplace-lister-mcp running on stdio");

@@ -1,21 +1,21 @@
 {
-  "name": "crosslist-mcp",
+  "name": "marketplace-lister-mcp",
   "version": "0.1.0",
-  "description": "MCP server that posts second-hand listings to online marketplaces from local photo folders. Facebook Marketplace today, built to add more.",
+  "description": "MCP server for listing items on Facebook Marketplace. Bulk-post second-hand listings from folders of photos via Claude. Cross-platform; Kijiji planned.",
   "license": "MIT",
   "keywords": [
     "mcp",
     "model-context-protocol",
     "facebook-marketplace",
     "kijiji",
-    "crosslisting",
+    "listing-automation",
     "playwright",
     "automation",
     "claude"
   ],
   "type": "module",
   "bin": {
-    "crosslist-mcp": "dist/index.js"
+    "marketplace-lister-mcp": "dist/index.js"
   },
   "files": [
     "dist"

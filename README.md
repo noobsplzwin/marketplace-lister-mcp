@@ -1,14 +1,18 @@
-# crosslist-mcp
+# marketplace-lister-mcp
 
-An MCP server that **posts second-hand listings from a folder of photos**, driving the real site in a dedicated browser profile. Facebook Marketplace works today; the structure is built so other marketplaces (Kijiji, Craigslist) can be added alongside it.
+**Post listings to Facebook Marketplace from a folder of photos, straight from Claude.**
 
-Runs on Windows, macOS and Linux.
+An MCP server for bulk-listing second-hand items. Point it at a folder, one subfolder per item, and it fills the real Marketplace form and publishes on your OK. Runs on Windows, macOS and Linux.
+
+Facebook Marketplace works today. Tools are namespaced per platform (`fb_login`, `fb_login_status`), so Kijiji and Craigslist can be added beside it rather than replacing it.
 
 Unlike cookie-scraping tools, this never touches your day-to-day Chrome or any OS keychain. You log in **once** in a dedicated browser window; the session persists in its own profile for all future runs.
 
 ## Why this exists
 
-Most "Facebook Marketplace" tools are either macOS-only (they decrypt your Chrome cookies via the macOS Keychain) or read-only (search, no posting). This one **posts**, runs anywhere Playwright runs, and holds its own login instead of borrowing yours.
+Existing Facebook Marketplace tooling splits two ways. The MCP servers are read-only, and several are macOS-only because they decrypt your Chrome cookies through the macOS Keychain. The auto-posters that *can* create listings are standalone scripts with no MCP interface, so an assistant can't drive them.
+
+This one posts, exposes the work as MCP tools, runs anywhere Playwright runs, and holds its own login instead of borrowing yours.
 
 ## Tools
 
@@ -27,8 +31,8 @@ Most "Facebook Marketplace" tools are either macOS-only (they decrypt your Chrom
 Requires Node.js 18+.
 
 ```bash
-git clone https://github.com/noobsplzwin/crosslist-mcp
-cd crosslist-mcp
+git clone https://github.com/noobsplzwin/marketplace-lister-mcp
+cd marketplace-lister-mcp
 npm install        # also downloads Chromium
 npm run build
 ```
@@ -36,7 +40,7 @@ npm run build
 ## Register with Claude Code
 
 ```bash
-claude mcp add crosslist -- node /absolute/path/to/crosslist-mcp/dist/index.js
+claude mcp add marketplace-lister -- node /absolute/path/to/marketplace-lister-mcp/dist/index.js
 ```
 
 Or add to a project `.mcp.json`:
@@ -44,9 +48,9 @@ Or add to a project `.mcp.json`:
 ```json
 {
   "mcpServers": {
-    "crosslist": {
+    "marketplace-lister": {
       "command": "node",
-      "args": ["C:/path/to/crosslist-mcp/dist/index.js"],
+      "args": ["C:/path/to/marketplace-lister-mcp/dist/index.js"],
       "env": { "FB_MCP_CHANNEL": "chrome" }
     }
   }
@@ -108,7 +112,7 @@ Search tips: fewer words find more results. Start broad ("rice cooker"), add the
 
 | Var | Default | Purpose |
 |-----|---------|---------|
-| `FB_MCP_PROFILE_DIR` | `~/.crosslist-mcp/facebook` | Where the Facebook login session is stored. One profile per marketplace. |
+| `FB_MCP_PROFILE_DIR` | `~/.marketplace-lister-mcp/facebook` | Where the Facebook login session is stored. One profile per marketplace. |
 | `FB_MCP_CHANNEL` | *(bundled Chromium)* | Set to `chrome` or `msedge` to use an installed browser. Recommended on Windows if bundled Chromium fails to launch (`spawn UNKNOWN`). |
 
 ## Notes & limits

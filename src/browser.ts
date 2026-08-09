@@ -14,7 +14,7 @@ import { chromium, type BrowserContext, type Page } from "playwright";
 // or clobber this one's session. Falls back to the pre-rename location so an
 // existing login keeps working without signing in again.
 const LEGACY_DIR = path.join(os.homedir(), ".fb-marketplace-mcp", "profile");
-const DEFAULT_DIR = path.join(os.homedir(), ".crosslist-mcp", "facebook");
+const DEFAULT_DIR = path.join(os.homedir(), ".marketplace-lister-mcp", "facebook");
 
 const PROFILE_DIR =
   process.env.FB_MCP_PROFILE_DIR ||
