@@ -1,12 +1,41 @@
 # marketplace-lister-mcp
 
-**Post listings to Facebook Marketplace from a folder of photos, straight from Claude.**
+**Post listings to Facebook Marketplace from a folder of photos, straight from Claude.** An MCP server for bulk-listing second-hand items: point it at a folder, one subfolder per item, and it fills the real Marketplace form and publishes once you approve the preview. It signs in inside its own browser profile, so it never reads your day-to-day Chrome or any OS keychain. Runs on Windows, macOS and Linux.
 
-An MCP server for bulk-listing second-hand items. Point it at a folder, one subfolder per item, and it fills the real Marketplace form and publishes on your OK. Runs on Windows, macOS and Linux.
+## Install
 
-Facebook Marketplace works today. Tools are namespaced per platform (`fb_login`, `fb_login_status`), so Kijiji and Craigslist can be added beside it rather than replacing it.
+```bash
+curl -fsSL https://raw.githubusercontent.com/noobsplzwin/marketplace-lister-mcp/main/install.sh | bash
+```
 
-Unlike cookie-scraping tools, this never touches your day-to-day Chrome or any OS keychain. You log in **once** in a dedicated browser window; the session persists in its own profile for all future runs.
+That installs the server and registers it with Claude Code. Needs Node.js 18+ and Chrome or Edge (without either, it downloads Chromium instead). On Windows, run it from Git Bash or WSL. Re-run any time to update.
+
+<details>
+<summary>Manual install, or another MCP client</summary>
+
+```bash
+git clone https://github.com/noobsplzwin/marketplace-lister-mcp
+cd marketplace-lister-mcp
+npm install     # builds on install
+claude mcp add marketplace-lister -- node "$PWD/dist/index.js"
+```
+
+For Claude Desktop or any other client, point its MCP config at the built entry point:
+
+```json
+{
+  "mcpServers": {
+    "marketplace-lister": {
+      "command": "node",
+      "args": ["/absolute/path/to/marketplace-lister-mcp/dist/index.js"]
+    }
+  }
+}
+```
+
+No Chrome or Edge? Run `npx playwright install chromium` once.
+
+</details>
 
 ## Why this exists
 
@@ -26,36 +55,9 @@ This one posts, exposes the work as MCP tools, runs anywhere Playwright runs, an
 | `publish_listing` | Publishes the listing currently on the review step. Call only after confirming the screenshot. |
 | `list_my_listings` | Opens your "Selling" page and returns current listings (text + screenshot) to verify Active vs. under review. |
 
-## Install
+## Platform support
 
-Requires Node.js 18+.
-
-```bash
-git clone https://github.com/noobsplzwin/marketplace-lister-mcp
-cd marketplace-lister-mcp
-npm install        # also downloads Chromium
-npm run build
-```
-
-## Register with Claude Code
-
-```bash
-claude mcp add marketplace-lister -- node /absolute/path/to/marketplace-lister-mcp/dist/index.js
-```
-
-Or add to a project `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "marketplace-lister": {
-      "command": "node",
-      "args": ["C:/path/to/marketplace-lister-mcp/dist/index.js"],
-      "env": { "FB_MCP_CHANNEL": "chrome" }
-    }
-  }
-}
-```
+Facebook Marketplace works today. Tools are namespaced per platform (`fb_login`, `fb_login_status`), so Kijiji and Craigslist can be added beside it rather than replacing it.
 
 ## First run
 

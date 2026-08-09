@@ -38,10 +38,11 @@ async function launch(channel?: string): Promise<BrowserContext> {
 export async function getContext(): Promise<BrowserContext> {
   if (ctx) return ctx;
   fs.mkdirSync(PROFILE_DIR, { recursive: true });
-  // Prefer an explicit channel if set. Otherwise try bundled Chromium first
-  // (zero setup for npx users), then fall back to installed Chrome/Edge — some
-  // Windows environments fail to spawn bundled Chromium ("spawn UNKNOWN").
-  const order = CHANNEL ? [CHANNEL] : [undefined, "chrome", "msedge"];
+  // Prefer an installed browser: nearly everyone has one, and it keeps install
+  // fast by not requiring Playwright's ~150 MB Chromium download. Bundled
+  // Chromium is the last resort, and some Windows setups can't spawn it at all
+  // ("spawn UNKNOWN"), which is why this walks a list instead of picking one.
+  const order = CHANNEL ? [CHANNEL] : ["chrome", "msedge", undefined];
   let lastErr: unknown;
   for (const ch of order) {
     try {
@@ -52,8 +53,10 @@ export async function getContext(): Promise<BrowserContext> {
     }
   }
   throw new Error(
-    `Could not launch a browser (tried ${order.map((c) => c ?? "bundled").join(", ")}). ` +
-      `Install Google Chrome, or set FB_MCP_CHANNEL. Last error: ${String(lastErr)}`
+    `Could not launch a browser (tried: ${order.map((c) => c ?? "bundled Chromium").join(", ")}).\n` +
+      `Install Google Chrome, or run: npx playwright install chromium\n` +
+      `To pin one, set FB_MCP_CHANNEL=chrome (or msedge).\n` +
+      `Last error: ${String(lastErr)}`
   );
 }
 

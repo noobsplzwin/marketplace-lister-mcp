@@ -23,7 +23,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "postinstall": "playwright install chromium"
+    "prepare": "tsc"
   },
   "engines": {
     "node": ">=18"
