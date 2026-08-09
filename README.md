@@ -1,157 +1,105 @@
 # marketplace-lister-mcp
 
-**Post listings to Facebook Marketplace from a folder of photos, straight from Claude.** An MCP server for bulk-listing second-hand items: point it at a folder, one subfolder per item, and it fills the real Marketplace form and publishes once you approve the preview. It signs in inside its own browser profile, so it never reads your day-to-day Chrome or any OS keychain. Runs on Windows, macOS and Linux.
+**Sell your stuff on Facebook Marketplace by talking to Claude.** Drop each item's photos into a folder, and Claude writes the listing, fills out the Marketplace form for you, and shows you a preview. Nothing goes public until you say so. It signs into Facebook in its own browser window, so it never touches the Chrome you use every day.
 
 ## Install
 
-Two commands in Claude Code:
+Two commands inside Claude Code:
 
 ```
 /plugin marketplace add noobsplzwin/marketplace-lister-mcp
 /plugin install marketplace-lister@marketplace-lister-mcp
 ```
 
-That installs the MCP server and the listing-copy skill together. Or hand this
-repo's URL to Claude Code and ask it to install this; the steps here are enough
-for it to finish on its own.
+You need [Node.js](https://nodejs.org) 18 or newer, and Chrome or Edge. Nothing to download, build, or configure by hand.
 
-Needs Node.js 18+ and Chrome or Edge. Nothing to clone, build, or configure.
+## Sign in once
 
-### Other MCP clients
+Tell Claude:
 
-Point any client at the published entry point:
+> Log in to Facebook Marketplace
 
-```json
-{
-  "mcpServers": {
-    "marketplace-lister": {
-      "command": "npx",
-      "args": ["-y", "github:noobsplzwin/marketplace-lister-mcp"]
-    }
-  }
-}
+A browser window opens on Facebook's own login page. Sign in there like you normally would, including any code sent to your phone. That's it, forever. Claude never sees or asks for your password, and your login is saved in a private window that has nothing to do with your regular Chrome.
+
+## A full example: selling a board game
+
+Say you're selling your copy of Wingspan. Take a few photos and put them in a folder of their own:
+
+```
+Desktop/sell/
+    wingspan/
+        IMG_4821.jpg     the box, front on
+        IMG_4822.jpg     the pieces laid out
+        IMG_4823.jpg     the cards and score pads
 ```
 
-The same line works from the CLI:
+Then tell Claude:
 
-```bash
-claude mcp add marketplace-lister -- npx -y github:noobsplzwin/marketplace-lister-mcp
+> Post everything in Desktop/sell to Marketplace
+
+Claude looks in the folder, sees one item, and looks at the photos:
+
+> Found 1 item with 3 photos: Wingspan, the board game.
+> Two things before I write it up: what are you asking, and is everything in the box?
+
+> $50, all the pieces are there, we played it maybe five times.
+
+It writes the listing and shows you exactly what will be posted:
+
+```
+Title         Wingspan Board Game — Excellent Condition, All Pieces Included
+Price         $50
+Category      Toys & Games
+Condition     Used - Like New
+
+Description   Selling my copy of Wingspan, the bird-themed engine builder that
+              won the Kennerspiel des Jahres. Played about five times, so the
+              cards and box are still in great shape.
+
+              Everything is included: the egg tray, all 170 bird cards, food
+              tokens, dice tower and score pads. Nothing missing.
+
+              Pickup downtown. Cash only.
 ```
 
-### From source, for development
+You get a screenshot of the real Marketplace page, filled in and ready. Look it over:
 
-```bash
-git clone https://github.com/noobsplzwin/marketplace-lister-mcp
-cd marketplace-lister-mcp
-npm install     # builds on install
-claude mcp add marketplace-lister -- node "$PWD/dist/index.js"
-```
+> Change the pickup to the east end and publish it
 
-No Chrome or Edge? Run `npx playwright install chromium` once.
+Done. Two messages, and it's live.
 
-### If you are an agent installing this
+**Selling ten things at once works the same way.** Give each item its own folder inside `Desktop/sell`, then say "post everything in Desktop/sell". Claude goes item by item, asks you the price for each, and shows you every preview before posting it.
 
-Run the two `/plugin` commands above if you are inside Claude Code; otherwise
-use the `claude mcp add ... npx` line. Verify with `claude mcp list`, which
-should show `marketplace-lister` connected. Then tell the user to say
-**"log in to Facebook Marketplace"**: a browser window opens, they sign in once
-themselves, and the session persists. Never ask them for their Facebook
-password; the tools never accept one.
+## What stays in your hands
 
-## Why this exists
+- **You set every price.** Claude never guesses one or quietly picks a number. It asks, every time. (If you want to see what similar things are going for first, ask, and it will look up local listings and show you the range. It won't tell you what to charge.)
+- **Nothing publishes without you.** Claude always stops at the preview and waits.
+- **You sign into Facebook yourself.** Claude never asks for your password and can't accept one.
 
-Existing Facebook Marketplace tooling splits two ways. The MCP servers are read-only, and several are macOS-only because they decrypt your Chrome cookies through the macOS Keychain. The auto-posters that *can* create listings are standalone scripts with no MCP interface, so an assistant can't drive them.
+## Good to know
 
-This one posts, exposes the work as MCP tools, runs anywhere Playwright runs, and holds its own login instead of borrowing yours.
+- **Photos have to be real files in a folder.** An image pasted into the chat window can't be uploaded to Facebook.
+- The first photo in the folder, alphabetically, becomes the cover photo.
+- New listings often say "being reviewed" for a few minutes before going live. That's Facebook, not a problem.
+- If Facebook shows a security check or CAPTCHA, finish it yourself in the window. Claude won't try to get around it.
+- If a browser window won't open, install Google Chrome, or run `npx playwright install chromium` once.
 
-## Tools
+## Which marketplaces
+
+Facebook Marketplace today. Kijiji and Craigslist are planned, and the design keeps them side by side rather than replacing each other.
+
+## Tools reference
+
+For the curious. You never call these by name; Claude picks them.
 
 | Tool | What it does |
 |------|--------------|
-| `fb_login` | Opens the dedicated browser to Facebook's login page and waits briefly for you to sign in. Idempotent: if already signed in, returns instantly; if you need more time, just call it again. You only ever type your password on Facebook's own page. |
-| `fb_login_status` | Reports whether the dedicated profile is logged in, and where the profile lives. |
-| `scan_items` | Scans a folder: each subfolder is one item, its images are that item's photos. Folders starting with `_` or `.` are skipped. |
-| `search_comps` | Looks up what similar items are listed for and returns price ranges (min / p25 / median / p75 / max). **Reference only — it does not recommend a price.** |
-| `create_listing` | Fills the create-item form (title, price, description, category, condition, photos) and advances to the review step, **stopping before publish**. Returns a screenshot of the review page to confirm. |
-| `publish_listing` | Publishes the listing currently on the review step. Call only after confirming the screenshot. |
-| `list_my_listings` | Opens your "Selling" page and returns current listings (text + screenshot) to verify Active vs. under review. |
+| `fb_login` | Opens the private browser window at Facebook's login page and waits for you to sign in. Returns straight away if you're already signed in. |
+| `fb_login_status` | Says whether you're currently signed in. |
+| `scan_items` | Reads a folder and treats each subfolder as one item for sale. |
+| `search_comps` | Looks up what similar items are listed for nearby and reports the price range. Reference only; it never recommends a price. |
+| `create_listing` | Fills in the Marketplace form and stops at the preview, returning a screenshot. |
+| `publish_listing` | Publishes the previewed listing. Runs only after you approve. |
+| `list_my_listings` | Shows your current listings and whether they're live yet. |
 
-## Platform support
-
-Facebook Marketplace works today. Tools are namespaced per platform (`fb_login`, `fb_login_status`), so Kijiji and Craigslist can be added beside it rather than replacing it.
-
-## First run
-
-1. Ask Claude to "log in to Facebook Marketplace" → it calls `fb_login`, a browser window opens.
-2. Sign in on Facebook's page (including any 2FA). Say you're done → `fb_login` again confirms.
-3. From then on it's automatic. The session is saved; you won't log in again unless Facebook expires it.
-
-## Typical flow
-
-Put each item's photos in its own folder:
-
-```
-C:\sell\
-  ninja-air-fryer\   IMG_8387.jpg  IMG_8390.jpg
-  office-chair\      IMG_9001.jpg  IMG_9002.jpg
-```
-
-> "Post everything in `C:\sell` to Marketplace."
-
-Claude calls `scan_items`, writes a title and description per item, **asks you for each price**, calls `create_listing` with that item's folder (you see a review screenshot), and on your OK calls `publish_listing`.
-
-One folder per item is the whole interface. You never handle individual file paths: `create_listing` takes `folder` and uploads every image inside it, sorted by filename, so the first photo alphabetically becomes the cover.
-
-Photos must be **files on disk** — an image pasted into a chat window can't be forwarded to the browser.
-
-## Pricing: you set it
-
-**The seller supplies every price.** Neither the tools nor the model estimate one.
-
-That's a deliberate retreat. An earlier version derived a suggested asking range from comps, and measured against real listings it was unreliable enough to cost money: a search for `rice cooker` medians around **$15** because entry-level units dominate those two words, while a premium micom cooker that sells for **$85** used sits in the very same results. Automated pricing quietly lowballs exactly the items worth the most.
-
-`search_comps` still exists as **reference material** — run it when you want to see the local market before deciding — but it reports ranges and declines to recommend:
-
-```
-search_comps({ query: "instant pot" })
-→ close_match_stats: { count: 14, min: 20, p25: 53, median: 88, p75: 119, max: 300 }
-   all_active_stats: { count: 26, min: 20, p25: 50, median: 73, p75: 100, max: 300 }
-   observation: "14 active listings matching the query containing \"instant\":
-                 $20–$300, median $88 ... Generic search terms pull in
-                 entry-level units, so this range can sit far below what a
-                 premium brand or model is actually worth. Reference only —
-                 the seller sets the price."
-```
-
-### Why there are two sets of stats
-
-Facebook's search is fuzzy: `staub dutch oven` returns mostly generic cast iron. So results are split. `close_match_stats` covers listings whose titles genuinely match; `all_active_stats` covers everything returned. Matching weights **rare** query words above common ones (searching "staub dutch oven", the word `staub` decides, not `oven`), and the rarest term becomes an **anchor** a comp must contain. Without that rule, two mid-frequency words out-vote the brand and a *Le Creuset tote bag* shows up as a comp for a Staub cocotte — observed in real results.
-
-Even with both filters the numbers stay indicative, not authoritative — hence the seller deciding.
-
-Search tips: fewer words find more results. Start broad ("rice cooker"), add the model number only if results are plentiful. Substring matching means common misspellings ("Instapot") fall outside the anchored set.
-
-## Configuration (env vars)
-
-| Var | Default | Purpose |
-|-----|---------|---------|
-| `FB_MCP_PROFILE_DIR` | `~/.marketplace-lister-mcp/facebook` | Where the Facebook login session is stored. One profile per marketplace. |
-| `FB_MCP_CHANNEL` | *(bundled Chromium)* | Set to `chrome` or `msedge` to use an installed browser. Recommended on Windows if bundled Chromium fails to launch (`spawn UNKNOWN`). |
-
-## Notes & limits
-
-- **You publish; the tool never auto-publishes.** `create_listing` always stops at review; publishing is a separate, explicit call.
-- Facebook has no official personal-Marketplace write API. This drives the real web UI via a real browser session, which is the most robust and least suspicious approach — but Facebook UI changes can break selectors; update `src/listing.ts` if a field stops filling.
-- New listings often show "being reviewed" for a few minutes before going Active. That's normal.
-- If Facebook shows a checkpoint/CAPTCHA, complete it yourself in the window — the tool won't try to bypass it.
-- Photos are read straight from disk (no size limit beyond Facebook's own).
-
-## Design note: why the browser, not the GraphQL API
-
-Facebook has no official personal-Marketplace write API, and its internal GraphQL `doc_id`s rotate with every frontend release. Worse, replaying a write mutation straight over HTTP is exactly the fingerprint their anti-abuse systems look for. So **publishing goes through the real browser session**. Reading (`search_comps`) also uses the rendered page — the result cards already carry price, title, location, and the Sold badge, so there's nothing to gain from reverse-engineering the API and a maintenance burden to avoid.
-
-## Roadmap
-
-- **Kijiji support**, then Craigslist. Tools are already namespaced per platform (`fb_login`, `fb_login_status`), so a second marketplace slots in beside the first rather than replacing it.
-- Post one item to several marketplaces in a single call.
-- Category-aware depreciation priors layered on top of `search_comps`, for items too rare to have local comps.
+Settings, if you ever need them: `FB_MCP_PROFILE_DIR` moves where your login is stored, `FB_MCP_CHANNEL` picks a specific browser (`chrome` or `msedge`).
