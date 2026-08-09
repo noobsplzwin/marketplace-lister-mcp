@@ -1,0 +1,38 @@
+{
+  "name": "fb-marketplace-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that creates and publishes Facebook Marketplace listings from local photos, cross-platform, using a dedicated Playwright browser profile.",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "facebook-marketplace",
+    "playwright",
+    "automation",
+    "claude"
+  ],
+  "type": "module",
+  "bin": {
+    "fb-marketplace-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "postinstall": "playwright install chromium"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "playwright": "^1.49.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  }
+}

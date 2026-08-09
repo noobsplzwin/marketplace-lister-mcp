@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.log
+# never commit login sessions or throwaway test harnesses
+profile/
+.fb-marketplace-mcp/
+test-client.mjs
+login-loop.mjs
+probe*.mjs
