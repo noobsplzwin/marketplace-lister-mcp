@@ -43,8 +43,8 @@ server.tool(
 
 server.tool(
   "scan_items",
-  "Scan a local folder for items to sell. Each immediate subfolder is treated as one item and its images are that item's photos (folders starting with '_' or '.' are skipped). If the folder has no subfolders, the folder itself is one item. Returns the item list as JSON.",
-  { folder: z.string().describe("Absolute path to the folder containing item subfolders") },
+  "Scan a local folder for things to sell. Returns one of two modes. `grouped`: the folder has subfolders, each already one item, so pass its `folder` straight to create_listing. `ungrouped`: the folder holds loose photos, returned individually with timestamps, and YOU group them: view the images in the order returned (photos of one item are almost always consecutive, being the order they were shot in), decide where each item starts and ends, confirm the grouping with the seller, then call create_listing once per item with that item's paths in `photos`. Never treat a flat folder as a single item.",
+  { folder: z.string().describe("Absolute path to the folder of photos, with or without per-item subfolders") },
   async ({ folder }) => {
     const items = scanItems(folder);
     return { content: [text(JSON.stringify(items, null, 2))] };

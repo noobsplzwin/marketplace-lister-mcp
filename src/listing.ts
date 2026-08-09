@@ -14,27 +14,76 @@ export interface ScannedItem {
   photos: string[];
 }
 
-/** Scan a directory: each immediate subfolder is one item; its images are its photos. */
-export function scanItems(root: string): ScannedItem[] {
+export interface LoosePhoto {
+  path: string;
+  name: string;
+  /** File modification time, ISO 8601. Photos of one item usually cluster. */
+  modified: string;
+  /** Seconds since the previous photo in this listing, null for the first. */
+  secondsAfterPrevious: number | null;
+}
+
+export type ScanResult =
+  | { mode: "grouped"; folder: string; items: ScannedItem[] }
+  | { mode: "ungrouped"; folder: string; photos: LoosePhoto[]; hint: string };
+
+const UNGROUPED_HINT =
+  "These photos are not sorted into items yet. Read them in the order given: " +
+  "photos of the same item are almost always consecutive, since that is the " +
+  "order they were taken in. Decide where one item ends and the next begins, " +
+  "confirm the grouping with the seller, then call create_listing once per " +
+  "item passing that item's photo paths in `photos`. A large jump in " +
+  "secondsAfterPrevious often marks a boundary, but the images decide.";
+
+function collect(dir: string): string[] {
+  return fs
+    .readdirSync(dir)
+    .filter((f) => IMAGE_EXT.has(path.extname(f).toLowerCase()))
+    .sort()
+    .map((f) => path.join(dir, f));
+}
+
+/**
+ * Scan a folder of things to sell.
+ *
+ * Subfolders present: each one is an item, already grouped by the seller.
+ * Only loose images: they are returned individually so the model can look at
+ * them and work out which photos belong to which item. Returning them as one
+ * item would silently merge a whole moving sale into a single listing.
+ */
+export function scanItems(root: string): ScanResult {
   if (!fs.existsSync(root)) throw new Error(`Folder not found: ${root}`);
   const entries = fs.readdirSync(root, { withFileTypes: true });
   const subdirs = entries.filter((e) => e.isDirectory() && !e.name.startsWith("_") && !e.name.startsWith("."));
 
-  const collect = (dir: string): string[] =>
-    fs
-      .readdirSync(dir)
-      .filter((f) => IMAGE_EXT.has(path.extname(f).toLowerCase()))
-      .sort()
-      .map((f) => path.join(dir, f));
-
-  if (subdirs.length === 0) {
-    // No subfolders: treat the root itself as a single item.
-    return [{ folder: root, name: path.basename(root), photos: collect(root) }];
+  if (subdirs.length > 0) {
+    return {
+      mode: "grouped",
+      folder: root,
+      items: subdirs.map((d) => {
+        const dir = path.join(root, d.name);
+        return { folder: dir, name: d.name, photos: collect(dir) };
+      }),
+    };
   }
-  return subdirs.map((d) => {
-    const dir = path.join(root, d.name);
-    return { folder: dir, name: d.name, photos: collect(dir) };
+
+  const files = collect(root);
+  if (files.length === 0) throw new Error(`No images or item subfolders in ${root}`);
+
+  let prev: number | null = null;
+  const photos: LoosePhoto[] = files.map((p) => {
+    const ms = fs.statSync(p).mtimeMs;
+    const gap = prev === null ? null : Math.round((ms - prev) / 1000);
+    prev = ms;
+    return {
+      path: p,
+      name: path.basename(p),
+      modified: new Date(ms).toISOString(),
+      secondsAfterPrevious: gap,
+    };
   });
+
+  return { mode: "ungrouped", folder: root, photos, hint: UNGROUPED_HINT };
 }
 
 export interface ListingInput {

@@ -1,6 +1,6 @@
 # marketplace-lister-mcp
 
-**Sell your stuff on Facebook Marketplace by talking to Claude.** Drop each item's photos into a folder, and Claude writes the listing, fills out the Marketplace form for you, and shows you a preview. Nothing goes public until you say so. It signs into Facebook in its own browser window, so it never touches the Chrome you use every day.
+**Sell your stuff on Facebook Marketplace by talking to Claude.** Photograph everything, drop it all in one folder, and Claude sorts out which photos belong to which item, writes each listing, and fills out the Marketplace form for you. Nothing goes public until you approve the preview. It signs into Facebook in its own browser window, so it never touches the Chrome you use every day.
 
 ## Install
 
@@ -21,30 +21,38 @@ Tell Claude:
 
 A browser window opens on Facebook's own login page. Sign in there like you normally would, including any code sent to your phone. That's it, forever. Claude never sees or asks for your password, and your login is saved in a private window that has nothing to do with your regular Chrome.
 
-## A full example: selling a board game
+## A full example: clearing out a shelf
 
-Say you're selling your copy of Wingspan. Take a few photos and put them in a folder of their own:
+Photograph everything you want to sell and drop the photos into one folder. No sorting, no renaming, no subfolders:
 
 ```
 Desktop/sell/
-    wingspan/
-        IMG_4821.jpg     the box, front on
-        IMG_4822.jpg     the pieces laid out
-        IMG_4823.jpg     the cards and score pads
+    IMG_4821.jpg
+    IMG_4822.jpg
+    IMG_4823.jpg
+    IMG_4824.jpg
+    IMG_4825.jpg
+    IMG_4826.jpg
+    IMG_4827.jpg
 ```
 
 Then tell Claude:
 
-> Post everything in Desktop/sell to Marketplace
+> List everything in Desktop/sell on Marketplace
 
-Claude looks in the folder, sees one item, and looks at the photos:
+Claude looks at every photo and works out where one item ends and the next begins:
 
-> Found 1 item with 3 photos: Wingspan, the board game.
-> Two things before I write it up: what are you asking, and is everything in the box?
+> I see three things here:
+>
+> 1. Wingspan board game (photos 1-3): box, pieces laid out, cards and score pads
+> 2. A KitchenAid stand mixer in red (photos 4-5)
+> 3. A pair of Blundstone boots (photos 6-7)
+>
+> Sound right? And what are you asking for each?
 
-> $50, all the pieces are there, we played it maybe five times.
+> Yes. $50 for Wingspan, $200 for the mixer, $90 for the boots. Boots are size 8, worn one winter.
 
-It writes the listing and shows you exactly what will be posted:
+It writes all three listings and shows you each one before anything is posted:
 
 ```
 Title         Wingspan Board Game — Excellent Condition, All Pieces Included
@@ -64,11 +72,13 @@ Description   Selling my copy of Wingspan, the bird-themed engine builder that
 
 You get a screenshot of the real Marketplace page, filled in and ready. Look it over:
 
-> Change the pickup to the east end and publish it
+> Looks good, publish it
 
-Done. Two messages, and it's live.
+Then it moves to the next one. Three items, a handful of messages, and you never opened Facebook yourself.
 
-**Selling ten things at once works the same way.** Give each item its own folder inside `Desktop/sell`, then say "post everything in Desktop/sell". Claude goes item by item, asks you the price for each, and shows you every preview before posting it.
+**If Claude groups something wrong**, just say so: "photos 4 and 5 are two different mixers" or "the last photo goes with the boots". It regroups and carries on.
+
+**Prefer to sort them yourself?** Put each item in its own subfolder and Claude will use your grouping as-is instead of guessing.
 
 ## What stays in your hands
 
@@ -79,7 +89,8 @@ Done. Two messages, and it's live.
 ## Good to know
 
 - **Photos have to be real files in a folder.** An image pasted into the chat window can't be uploaded to Facebook.
-- The first photo in the folder, alphabetically, becomes the cover photo.
+- Grouping works best when you shoot one item at a time, since Claude reads the photos in order and looks for where the subject changes. Photograph the mixer, then the boots, not alternating.
+- The first photo of each item becomes the cover photo, so lead with the clearest full view.
 - New listings often say "being reviewed" for a few minutes before going live. That's Facebook, not a problem.
 - If Facebook shows a security check or CAPTCHA, finish it yourself in the window. Claude won't try to get around it.
 - If a browser window won't open, install Google Chrome, or run `npx playwright install chromium` once.
@@ -96,7 +107,7 @@ For the curious. You never call these by name; Claude picks them.
 |------|--------------|
 | `fb_login` | Opens the private browser window at Facebook's login page and waits for you to sign in. Returns straight away if you're already signed in. |
 | `fb_login_status` | Says whether you're currently signed in. |
-| `scan_items` | Reads a folder and treats each subfolder as one item for sale. |
+| `scan_items` | Reads a folder. Subfolders are treated as ready-made items; loose photos come back individually for Claude to group by looking at them. |
 | `search_comps` | Looks up what similar items are listed for nearby and reports the price range. Reference only; it never recommends a price. |
 | `create_listing` | Fills in the Marketplace form and stops at the preview, returning a screenshot. |
 | `publish_listing` | Publishes the previewed listing. Runs only after you approve. |
