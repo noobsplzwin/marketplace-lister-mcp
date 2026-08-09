@@ -7,3 +7,8 @@ profile/
 test-client.mjs
 login-loop.mjs
 probe*.mjs
+
+# Google Drive injects these into every folder
+desktop.ini
+Thumbs.db
+.DS_Store
