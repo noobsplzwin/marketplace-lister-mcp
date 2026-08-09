@@ -4,15 +4,41 @@
 
 ## Install
 
-**Hand this repo's URL to Claude Code and ask it to install this.** It reads the steps below and does the whole setup itself. Or run the installer yourself:
+Two commands in Claude Code:
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/noobsplzwin/marketplace-lister-mcp/main/install.sh | bash
+```
+/plugin marketplace add noobsplzwin/marketplace-lister-mcp
+/plugin install marketplace-lister@marketplace-lister-mcp
 ```
 
-That clones, builds, and registers the server with Claude Code. Needs Node.js 18+ and Chrome or Edge (with neither, it downloads Chromium instead). On Windows, run it from Git Bash or WSL. Re-run any time to update.
+That installs the MCP server and the listing-copy skill together. Or hand this
+repo's URL to Claude Code and ask it to install this; the steps here are enough
+for it to finish on its own.
 
-### Manual install, or another MCP client
+Needs Node.js 18+ and Chrome or Edge. Nothing to clone, build, or configure.
+
+### Other MCP clients
+
+Point any client at the published entry point:
+
+```json
+{
+  "mcpServers": {
+    "marketplace-lister": {
+      "command": "npx",
+      "args": ["-y", "github:noobsplzwin/marketplace-lister-mcp"]
+    }
+  }
+}
+```
+
+The same line works from the CLI:
+
+```bash
+claude mcp add marketplace-lister -- npx -y github:noobsplzwin/marketplace-lister-mcp
+```
+
+### From source, for development
 
 ```bash
 git clone https://github.com/noobsplzwin/marketplace-lister-mcp
@@ -21,29 +47,16 @@ npm install     # builds on install
 claude mcp add marketplace-lister -- node "$PWD/dist/index.js"
 ```
 
-For Claude Desktop or any other client, point its MCP config at the built entry point:
-
-```json
-{
-  "mcpServers": {
-    "marketplace-lister": {
-      "command": "node",
-      "args": ["/absolute/path/to/marketplace-lister-mcp/dist/index.js"]
-    }
-  }
-}
-```
-
 No Chrome or Edge? Run `npx playwright install chromium` once.
 
 ### If you are an agent installing this
 
-Run the `curl | bash` line above. On Windows without Git Bash, use the manual
-block instead, substituting the real absolute path for `$PWD`. Verify with
-`claude mcp list`, which should show `marketplace-lister` connected. Then tell
-the user to say **"log in to Facebook Marketplace"**: a browser window opens,
-they sign in once themselves, and the session persists. Do not ask them for
-their Facebook password; the tools never accept one.
+Run the two `/plugin` commands above if you are inside Claude Code; otherwise
+use the `claude mcp add ... npx` line. Verify with `claude mcp list`, which
+should show `marketplace-lister` connected. Then tell the user to say
+**"log in to Facebook Marketplace"**: a browser window opens, they sign in once
+themselves, and the session persists. Never ask them for their Facebook
+password; the tools never accept one.
 
 ## Why this exists
 
