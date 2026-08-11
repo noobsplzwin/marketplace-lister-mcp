@@ -156,35 +156,37 @@ async function pickFromCombobox(page: Page, comboLabel: string, optionText: stri
 
   const seen = new Set<string>();
   for (let i = 0; i < 30; i++) {
-    const options: string[] = await page.evaluate(() => {
-      const lb = document.querySelector("div[role=listbox]");
-      if (!lb) return [];
-      return [...lb.querySelectorAll("*")]
-        .filter((e) => !e.children.length)
-        .map((e) => (e.textContent || "").trim())
-        .filter((t) => t.length > 0 && t.length < 40);
-    });
+    // Options are plain spans in the document, with no listbox wrapper to scope
+    // to, so collect every short visible leaf span and match on text.
+    const options: string[] = await page.evaluate(() =>
+      [...document.querySelectorAll("span")]
+        .filter((s) => s.offsetParent && !s.children.length)
+        .map((s) => (s.textContent || "").trim())
+        .filter((t) => t.length > 0 && t.length < 40)
+    );
     options.forEach((o) => seen.add(o));
 
     const match = options.find((o) => o.toLowerCase() === optionText.toLowerCase());
     if (match) {
-      await page
-        .locator("div[role=listbox]")
-        .getByText(match, { exact: true })
-        .first()
-        .click({ timeout: 10000 });
+      await page.locator(`span:text-is("${match}")`).first().click({ timeout: 10000 });
       await page.waitForTimeout(800);
       return;
     }
 
+    // Scroll whatever actually scrolls: walk up from a known option until an
+    // ancestor has overflow. The popup markup carries no stable handle.
     const moved = await page.evaluate(() => {
-      const lb = document.querySelector("div[role=listbox]");
-      if (!lb) return false;
-      const before = lb.scrollTop;
-      lb.scrollTop += 220;
-      return lb.scrollTop !== before;
+      const anchor = [...document.querySelectorAll("span")].find(
+        (s) => s.offsetParent && !s.children.length && /^(Tools|Furniture|Household|Garden|Appliances)$/.test((s.textContent || "").trim())
+      );
+      let el: HTMLElement | null = (anchor?.parentElement as HTMLElement) ?? null;
+      while (el && el.scrollHeight <= el.clientHeight + 4) el = el.parentElement;
+      if (!el) return false;
+      const before = el.scrollTop;
+      el.scrollTop += 220;
+      return el.scrollTop !== before;
     });
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(350);
     if (!moved && i > 3) break;
   }
 
