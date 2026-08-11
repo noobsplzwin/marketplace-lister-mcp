@@ -113,25 +113,84 @@ export function photosInFolder(folder: string): string[] {
   return files;
 }
 
+/**
+ * Open the create form, waiting for the form itself rather than the URL.
+ *
+ * Facebook bounces this route back to the Marketplace feed fairly often, and
+ * does so persistently once you have opened it many times in quick succession.
+ * Back off between tries, and if it never lands, say that plainly instead of
+ * failing later on a missing field.
+ */
 async function gotoCreate(page: Page): Promise<void> {
-  // FB sometimes bounces the first navigation to the home feed; retry once.
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < 4; attempt++) {
     try {
       await page.goto(CREATE_URL, { waitUntil: "domcontentloaded", timeout: 60000 });
-      if (page.url().includes("/marketplace/create/item")) return;
     } catch {
-      /* retry */
+      /* keep trying */
     }
-    await page.waitForTimeout(2500);
+    await page.waitForTimeout(3000 + attempt * 2000);
+    if (page.url().includes("/marketplace/create/item") && (await page.locator("label[role=combobox]").count()) > 0) {
+      return;
+    }
   }
-  await page.goto(CREATE_URL, { waitUntil: "domcontentloaded", timeout: 60000 });
+  throw new Error(
+    "Facebook kept redirecting away from the create-listing form (now at " +
+      page.url() +
+      "). This usually means too many listing attempts in a short window. " +
+      "Wait 20-30 minutes and try again; the login itself is still fine."
+  );
 }
 
+/**
+ * Choose an option from one of the form's comboboxes.
+ *
+ * The option list is virtualised: entries that need scrolling are not in the
+ * DOM at all, so clicking by exact text silently misses anything below the
+ * fold. Scroll until it appears, match case-insensitively, and when it really
+ * is not there, report the options that are, so the caller can pick a real one
+ * instead of guessing.
+ */
 async function pickFromCombobox(page: Page, comboLabel: string, optionText: string): Promise<void> {
-  await page.click(`label[role=combobox]:has-text("${comboLabel}")`, { timeout: 10000 });
-  await page.waitForTimeout(1000);
-  await page.click(`span:text-is("${optionText}")`, { timeout: 10000 });
-  await page.waitForTimeout(700);
+  await page.click(`label[role=combobox]:has-text("${comboLabel}")`, { timeout: 15000 });
+  await page.waitForTimeout(1200);
+
+  const seen = new Set<string>();
+  for (let i = 0; i < 30; i++) {
+    const options: string[] = await page.evaluate(() => {
+      const lb = document.querySelector("div[role=listbox]");
+      if (!lb) return [];
+      return [...lb.querySelectorAll("*")]
+        .filter((e) => !e.children.length)
+        .map((e) => (e.textContent || "").trim())
+        .filter((t) => t.length > 0 && t.length < 40);
+    });
+    options.forEach((o) => seen.add(o));
+
+    const match = options.find((o) => o.toLowerCase() === optionText.toLowerCase());
+    if (match) {
+      await page
+        .locator("div[role=listbox]")
+        .getByText(match, { exact: true })
+        .first()
+        .click({ timeout: 10000 });
+      await page.waitForTimeout(800);
+      return;
+    }
+
+    const moved = await page.evaluate(() => {
+      const lb = document.querySelector("div[role=listbox]");
+      if (!lb) return false;
+      const before = lb.scrollTop;
+      lb.scrollTop += 220;
+      return lb.scrollTop !== before;
+    });
+    await page.waitForTimeout(300);
+    if (!moved && i > 3) break;
+  }
+
+  throw new Error(
+    `"${optionText}" is not an option for ${comboLabel}. Available: ${[...seen].join(", ") || "(none found)"}`
+  );
 }
 
 /**

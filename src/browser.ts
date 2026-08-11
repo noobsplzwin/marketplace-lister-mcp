@@ -35,8 +35,25 @@ async function launch(channel?: string): Promise<BrowserContext> {
   });
 }
 
+/** A cached context is useless once its browser is gone: closed by the user,
+ *  crashed, or killed. Detect that and relaunch rather than handing back a
+ *  dead handle, which otherwise breaks every later call until a restart. */
+async function isAlive(c: BrowserContext): Promise<boolean> {
+  try {
+    const p = c.pages()[0] ?? (await c.newPage());
+    await p.evaluate(() => 1);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function getContext(): Promise<BrowserContext> {
-  if (ctx) return ctx;
+  if (ctx) {
+    if (await isAlive(ctx)) return ctx;
+    await ctx.close().catch(() => {});
+    ctx = null;
+  }
   fs.mkdirSync(PROFILE_DIR, { recursive: true });
   // Prefer an installed browser: nearly everyone has one, and it keeps install
   // fast by not requiring Playwright's ~150 MB Chromium download. Bundled
