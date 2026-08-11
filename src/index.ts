@@ -4,7 +4,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { smoothLogin } from "./login.js";
 import { isLoggedIn, profileDir, closeContext } from "./browser.js";
-import { scanItems, fillListing, publishListing, listMine, photosInFolder } from "./listing.js";
+import { scanItems, fillListing, publishListing, postListing, listMine, photosInFolder } from "./listing.js";
 import { searchComps } from "./comps.js";
 
 const server = new McpServer({
@@ -95,8 +95,42 @@ server.tool(
 );
 
 server.tool(
+  "post_listing",
+  "Post one item to Marketplace in a single step: uploads the photos, fills the form, checks the review page really shows the title and price it was given, then publishes. This is the normal way to list something. Call it only after the seller has seen the wording and price you propose and agreed to them; show them the text first, in the message, rather than posting and asking afterwards. The price must be the seller's own number, never an estimate. Prefer this over create_listing plus publish_listing, which leave a draft that exists only while the browser stays open and is lost if anything interrupts.",
+  {
+    title: z.string(),
+    price: z
+      .union([z.string(), z.number()])
+      .describe("The seller's own asking price. Ask them for it; do not infer, estimate, or derive it from comps."),
+    description: z.string(),
+    category: z.string().describe('Marketplace category. If it is wrong the error lists every valid one, e.g. "Appliances", "Household", "Electronics & computers", "Toys & Games".'),
+    condition: z.enum(CONDITIONS),
+    folder: z.string().optional().describe("Folder holding this item's photos; every image in it is uploaded, sorted by filename."),
+    photos: z.array(z.string()).optional().describe("Explicit photo paths (first is the cover), when picking specific files instead of a folder."),
+  },
+  async ({ title, price, description, category, condition, folder, photos }) => {
+    if (!(await isLoggedIn())) {
+      return { content: [text("Not logged in. Call fb_login first.")], isError: true };
+    }
+    let files: string[];
+    try {
+      files = photos?.length ? photos : photosInFolder(folder ?? "");
+    } catch (e) {
+      return { content: [text(`${e instanceof Error ? e.message : String(e)}\nPass either "folder" or "photos".`)], isError: true };
+    }
+    const { screenshot, url } = await postListing({ title, price, description, category, condition, photos: files });
+    return {
+      content: [
+        text(`Published "${title}" at $${price} (${condition}, ${category}). Now at: ${url}`),
+        img(screenshot),
+      ],
+    };
+  }
+);
+
+server.tool(
   "create_listing",
-  "Fill the Facebook Marketplace 'create item' form and advance to the review step, STOPPING before publish. Point it at a folder of photos (one folder per item) — that is the normal way to use it; 'photos' is only for picking individual files. Returns a screenshot of the review page to confirm before calling publish_listing. The price must come from the seller — never estimate one or carry one over from search_comps without the seller stating it. Requires being logged in (call fb_login first).",
+  "Fill the form and stop at the review step without publishing, returning a screenshot. Use post_listing instead unless the seller specifically wants to see the filled-in page before it goes live: the draft this leaves behind lives only in the open browser and is lost if the session ends, the browser closes, or anything else interrupts. When you do use it, call publish_listing straight after, in the same session. The price must come from the seller.",
   {
     title: z.string(),
     price: z

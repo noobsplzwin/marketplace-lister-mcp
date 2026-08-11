@@ -72,9 +72,11 @@ Description   Selling my copy of Wingspan, the bird-themed engine builder that
 
 You get a screenshot of the real Marketplace page, filled in and ready. Look it over:
 
-> Looks good, publish it
+> Looks good, post them
 
-Then it moves to the next one. Three items, a handful of messages, and you never opened Facebook yourself.
+Each one goes up as you approve it. Three items, a handful of messages, and you never opened Facebook yourself.
+
+Approving the wording is the only gate. Nothing is posted before you say so, and once you do, that item is uploaded, filled in and published in one go, so closing your laptop halfway through can't leave a half-made listing behind.
 
 **If Claude groups something wrong**, just say so: "photos 4 and 5 are two different mixers" or "the last photo goes with the boots". It regroups and carries on.
 
@@ -112,8 +114,9 @@ For the curious. You never call these by name; Claude picks them.
 | `fb_login_status` | Says whether you're currently signed in. |
 | `scan_items` | Reads a folder. Subfolders are treated as ready-made items; loose photos come back individually for Claude to group by looking at them. |
 | `search_comps` | Looks up what similar items are listed for nearby and reports the price range. Reference only; it never recommends a price. |
-| `create_listing` | Fills in the Marketplace form and stops at the preview, returning a screenshot. |
-| `publish_listing` | Publishes the previewed listing. Runs only after you approve. |
+| `post_listing` | Uploads the photos, fills the form, checks the page really shows your title and price, and publishes. Runs only after you've approved the wording. |
+| `create_listing` | Fills the form and stops at the preview instead of posting, if you'd rather see the page first. |
+| `publish_listing` | Publishes a listing left at the preview by `create_listing`. |
 | `list_my_listings` | Shows your current listings and whether they're live yet. |
 
 Settings, if you ever need them: `FB_MCP_PROFILE_DIR` moves where your login is stored, `FB_MCP_CHANNEL` picks a specific browser (`chrome` or `msedge`).

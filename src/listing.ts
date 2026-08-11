@@ -227,6 +227,38 @@ export async function fillListing(input: ListingInput): Promise<Buffer> {
 }
 
 /**
+ * Fill and publish in one go, for when the seller has already approved the
+ * wording and price.
+ *
+ * Splitting this into fill-then-publish leaves a draft alive only in the open
+ * browser, so any interruption between the two loses it. Doing both inside one
+ * call removes that window entirely: it either posts or it doesn't.
+ *
+ * The visual check the two-step flow bought is replaced by a stricter one. The
+ * review page is read back and the title and price must appear on it before
+ * anything is published, which catches a field that silently failed to fill.
+ */
+export async function postListing(input: ListingInput): Promise<{ screenshot: Buffer; url: string }> {
+  const screenshot = await fillListing(input);
+
+  const page = await getPage();
+  const review = await page.innerText("body");
+  const priceText = String(input.price).replace(/[^0-9.]/g, "");
+  const missing: string[] = [];
+  if (!review.includes(input.title.slice(0, 40))) missing.push("title");
+  if (priceText && !review.includes(priceText)) missing.push("price");
+  if (missing.length) {
+    throw new Error(
+      `Stopping before publish: the review page does not show the ${missing.join(" or ")} that was asked for. ` +
+        `Nothing was posted. Check the form and try again.`
+    );
+  }
+
+  const url = await publishListing();
+  return { screenshot, url };
+}
+
+/**
  * Click Publish on the review step. Returns the resulting URL.
  *
  * This only works while the draft from create_listing is still on screen, which
