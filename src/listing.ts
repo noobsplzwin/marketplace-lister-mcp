@@ -226,10 +226,25 @@ export async function fillListing(input: ListingInput): Promise<Buffer> {
   return await page.screenshot();
 }
 
-/** Click Publish on the review step. Returns the resulting URL. */
+/**
+ * Click Publish on the review step. Returns the resulting URL.
+ *
+ * This only works while the draft from create_listing is still on screen, which
+ * holds as long as the server keeps running: both calls share one browser. If
+ * the browser has been restarted in between, the draft is gone, and a bare
+ * selector timeout would not explain why. Say what happened instead.
+ */
 export async function publishListing(): Promise<string> {
   const page = await getPage();
-  await page.click('div[role=button]:has-text("Publish"), span:text-is("Publish")', { timeout: 10000 });
+  const publish = page.locator('div[role=button]:has-text("Publish"), span:text-is("Publish")').first();
+  if ((await publish.count()) === 0) {
+    throw new Error(
+      "No draft is waiting to be published (currently at " +
+        page.url() +
+        "). A draft only survives while the browser stays open, so run create_listing again and publish without restarting in between."
+    );
+  }
+  await publish.click({ timeout: 10000 });
   await page.waitForTimeout(5000);
   return page.url();
 }
