@@ -1,6 +1,6 @@
 # marketplace-lister-mcp
 
-**Sell your stuff on Facebook Marketplace by talking to Claude.** Photograph everything, drop it all in one folder, and Claude sorts out which photos belong to which item, writes each listing, and fills out the Marketplace form for you. Nothing goes public until you approve the preview. It signs into Facebook in its own browser window, so it never touches the Chrome you use every day.
+**Sell your stuff on Facebook Marketplace by talking to Claude.** Point it at a folder of photos, or just photograph the thing from your phone, and Claude works out what each item is, writes the listing and fills out the Marketplace form for you. Nothing goes public until you approve the wording. It signs into Facebook in its own browser window, so it never touches the Chrome you use every day.
 
 ## Install
 
@@ -21,7 +21,11 @@ Tell Claude:
 
 A browser window opens on Facebook's own login page. Sign in there like you normally would, including any code sent to your phone. That's it, forever. Claude never sees or asks for your password, and your login is saved in a private window that has nothing to do with your regular Chrome.
 
-## A full example: clearing out a shelf
+## Two ways to list something
+
+Both start the same way: you show Claude the photos and say what you want for the item. It works out what the thing is, writes the listing, and shows you the wording. Nothing is posted until you say go.
+
+### 1. Photos already on your computer
 
 Photograph everything you want to sell and drop the photos into one folder. No sorting, no renaming, no subfolders:
 
@@ -70,17 +74,27 @@ Description   Selling my copy of Wingspan, the bird-themed engine builder that
               Pickup downtown. Cash only.
 ```
 
-You get a screenshot of the real Marketplace page, filled in and ready. Look it over:
-
 > Looks good, post them
 
 Each one goes up as you approve it. Three items, a handful of messages, and you never opened Facebook yourself.
 
-Approving the wording is the only gate. Nothing is posted before you say so, and once you do, that item is uploaded, filled in and published in one go, so closing your laptop halfway through can't leave a half-made listing behind.
-
 **If Claude groups something wrong**, just say so: "photos 4 and 5 are two different mixers" or "the last photo goes with the boots". It regroups and carries on.
 
 **Prefer to sort them yourself?** Put each item in its own subfolder and Claude will use your grouping as-is instead of guessing.
+
+### 2. Photograph it with your phone
+
+You don't have to move files around at all. Open Claude Code on your phone, at [claude.ai/code](https://claude.ai/code), and it drives the session on your computer.
+
+Stand in front of the thing you're selling, take the photos right there in the conversation, and say:
+
+> Sell this on Marketplace, $80
+
+The photos land on your computer as ordinary files, so Claude reads them, identifies the item, writes the listing and shows you the wording. Reply "post it" and it's live, without you touching a keyboard.
+
+This is the fastest way to clear out a room: photograph, price, approve, next.
+
+Your computer does need to be awake with Claude Code running, since the phone is a remote control for the session on your machine rather than a separate app.
 
 ## What stays in your hands
 
@@ -90,7 +104,7 @@ Approving the wording is the only gate. Nothing is posted before you say so, and
 
 ## Good to know
 
-- **Photos have to be real files in a folder.** An image pasted into the chat window can't be uploaded to Facebook.
+- Photos taken or attached in the conversation are saved on your computer automatically, so the phone route needs no folder at all.
 - Grouping works best when you shoot one item at a time, since Claude reads the photos in order and looks for where the subject changes. Photograph the mixer, then the boots, not alternating.
 - The first photo of each item becomes the cover photo, so lead with the clearest full view.
 - **Posting from a folder you've used before?** Ask Claude to check what you already have listed first. It can read your Selling page, and photos tend to linger in a folder long after the thing sold.
