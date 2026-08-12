@@ -86,11 +86,13 @@ Each one goes up as you approve it. Three items, a handful of messages, and you 
 
 You don't have to move files around at all. Open Claude Code on your phone, at [claude.ai/code](https://claude.ai/code), and it drives the session on your computer.
 
-Stand in front of the thing you're selling, take the photos right there in the conversation, and say:
+Stand in front of the thing you're selling, photograph it, and **attach the photos as files** so they land on your computer. Then say:
 
 > Sell this on Marketplace, $80
 
-The photos land on your computer as ordinary files, so Claude reads them, identifies the item, writes the listing and shows you the wording. Reply "post it" and it's live, without you touching a keyboard.
+Claude reads them, identifies the item, writes the listing and shows you the wording. Reply "post it" and it's live, without you touching a keyboard.
+
+Attaching matters: a picture pasted straight into the chat is only ever shown to Claude, never written to disk, and Facebook needs a real file to upload. If Claude says it can't find the photos, that's why. Attach them, or save them to a folder and use the first route.
 
 This is the fastest way to clear out a room: photograph, price, approve, next.
 
@@ -104,7 +106,7 @@ Your computer does need to be awake with Claude Code running, since the phone is
 
 ## Good to know
 
-- Photos taken or attached in the conversation are saved on your computer automatically, so the phone route needs no folder at all.
+- **Photos must exist as files.** Attached ones are written to disk and work; pasted-inline ones are not, and cannot be uploaded.
 - Grouping works best when you shoot one item at a time, since Claude reads the photos in order and looks for where the subject changes. Photograph the mixer, then the boots, not alternating.
 - The first photo of each item becomes the cover photo, so lead with the clearest full view.
 - **Posting from a folder you've used before?** Ask Claude to check what you already have listed first. It can read your Selling page, and photos tend to linger in a folder long after the thing sold.
