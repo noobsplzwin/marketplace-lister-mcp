@@ -84,9 +84,14 @@ Each one goes up as you approve it. Three items, a handful of messages, and you 
 
 ### 2. Photograph it with your phone
 
-You don't have to move files around at all. Open Claude Code on your phone, at [claude.ai/code](https://claude.ai/code), and it drives the session on your computer.
+You don't have to move files around at all. Your phone drives the Claude Code session already running on your computer, so the plugin and your Facebook login stay where they are.
 
-Stand in front of the thing you're selling, photograph it, and **attach the photos as files** so they land on your computer. Then say:
+Set it up once, on the computer:
+
+1. Start the session with Remote Control on: `claude --remote-control` (or `--rc`). To have it on every time, put `"remoteControlAtStartup": true` in your settings.
+2. Leave that session running and the computer awake. The phone is a remote control, not a separate app, so nothing works if it sleeps.
+
+Then open [claude.ai/code](https://claude.ai/code) on your phone and pick that session. Stand in front of the thing you're selling, photograph it, and **attach the photos as files** so they land on your computer. Then say:
 
 > Sell this on Marketplace, $80
 
@@ -95,8 +100,6 @@ Claude reads them, identifies the item, writes the listing and shows you the wor
 Attaching matters: a picture pasted straight into the chat is only ever shown to Claude, never written to disk, and Facebook needs a real file to upload. If Claude says it can't find the photos, that's why. Attach them, or save them to a folder and use the first route.
 
 This is the fastest way to clear out a room: photograph, price, approve, next.
-
-Your computer does need to be awake with Claude Code running, since the phone is a remote control for the session on your machine rather than a separate app.
 
 ## What stays in your hands
 

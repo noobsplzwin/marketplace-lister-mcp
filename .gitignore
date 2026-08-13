@@ -16,3 +16,6 @@ Thumbs.db
 # never commit a browser profile: it holds live login sessions
 Usershuizh*
 *profile/
+
+# scratch scripts
+_*.mjs
