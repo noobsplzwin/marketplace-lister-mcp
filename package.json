@@ -2,16 +2,31 @@
   "name": "marketplace-lister-mcp",
   "version": "0.1.0",
   "description": "MCP server for listing items on Facebook Marketplace. Bulk-post second-hand listings from folders of photos via Claude. Cross-platform; Kijiji planned.",
+  "author": "Leo Zheng (https://github.com/noobsplzwin)",
+  "homepage": "https://github.com/noobsplzwin/marketplace-lister-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/noobsplzwin/marketplace-lister-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/noobsplzwin/marketplace-lister-mcp/issues"
+  },
   "license": "MIT",
   "keywords": [
     "mcp",
+    "mcp-server",
     "model-context-protocol",
+    "claude",
+    "claude-code",
+    "facebook",
+    "marketplace",
     "facebook-marketplace",
     "kijiji",
     "listing-automation",
+    "selling",
+    "secondhand",
     "playwright",
-    "automation",
-    "claude"
+    "automation"
   ],
   "type": "module",
   "bin": {
