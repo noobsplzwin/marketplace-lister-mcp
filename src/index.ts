@@ -12,7 +12,10 @@ const server = new McpServer({
   version: "0.1.0",
 });
 
-const CONDITIONS = ["New", "Used - Like New", "Used - Good", "Used - Fair"] as const;
+const CONDITIONS = [
+  "New", "Used - Like New", "Used - Good", "Used - Fair",
+  "Nuevo", "Usado - Como nuevo", "Usado - Buen estado", "Usado - Aceptable",
+] as const;
 
 function img(buf: Buffer) {
   return { type: "image" as const, data: buf.toString("base64"), mimeType: "image/png" };
@@ -103,7 +106,7 @@ server.tool(
       .union([z.string(), z.number()])
       .describe("The seller's own asking price. Ask them for it; do not infer, estimate, or derive it from comps."),
     description: z.string(),
-    category: z.string().describe('Marketplace category. If it is wrong the error lists every valid one, e.g. "Appliances", "Household", "Electronics & computers", "Toys & Games".'),
+    category: z.string().describe('Marketplace category exactly as the form shows it in the account\'s language. If it is wrong the error lists every valid one. English e.g. "Appliances", "Household"; Spanish e.g. "Electrodomésticos", "Hogar", "Muebles", "Venta de garaje", "Varios".'),
     condition: z.enum(CONDITIONS),
     folder: z.string().optional().describe("Folder holding this item's photos; every image in it is uploaded, sorted by filename."),
     photos: z.array(z.string()).optional().describe("Explicit photo paths (first is the cover), when picking specific files instead of a folder."),
@@ -137,7 +140,7 @@ server.tool(
       .union([z.string(), z.number()])
       .describe("The seller's own asking price. Ask them for it; do not infer, estimate, or derive it from comps."),
     description: z.string(),
-    category: z.string().describe('Marketplace category, e.g. "Appliances", "Household", "Furniture"'),
+    category: z.string().describe('Marketplace category as the form shows it, e.g. "Appliances" / "Electrodomésticos", "Household" / "Hogar", "Furniture" / "Muebles"'),
     condition: z.enum(CONDITIONS),
     folder: z
       .string()
