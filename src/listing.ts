@@ -281,9 +281,9 @@ async function pickFromCombobox(page: Page, comboLabels: readonly string[], opti
 }
 
 /**
- * Fill the whole create form and advance to the review ("List in more places")
- * step. Deliberately STOPS before Publish so the caller can confirm.
- * Returns a PNG screenshot buffer of the review page.
+ * Fill the whole create form and STOP on it, before Next, so the caller can
+ * confirm. Returns a PNG screenshot of the filled form with Facebook's live
+ * preview beside it.
  */
 export async function fillListing(input: ListingInput): Promise<Buffer> {
   for (const p of input.photos) {
@@ -309,13 +309,25 @@ export async function fillListing(input: ListingInput): Promise<Buffer> {
   if (!desc) await clickButton(page, UI.moreDetails, 5000);
   await (await labelled(page, UI.description, "textarea")).fill(input.description);
 
-  // Advance to the audience / review step.
-  if (!(await clickButton(page, UI.next))) {
-    throw new Error(`Could not find the ${UI.next.join(" / ")} button. Nothing was posted.`);
-  }
-  await page.waitForTimeout(2500);
-
+  // Deliberately do NOT click Next here. On a live es-AR account the Next
+  // click alone once published the listing (the review step's Publish button
+  // was already spinning in the screenshot taken 2.5s later, with nothing else
+  // having clicked it). Root cause unknown, so Next is only ever clicked from
+  // publishListing(), i.e. after the seller has approved this screenshot.
+  await waitForUploads(page);
+  await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
+  await page.waitForTimeout(800);
   return await page.screenshot();
+}
+
+/** Wait (bounded) until Next is enabled, which is how the form signals the photos finished uploading. */
+async function waitForUploads(page: Page, timeout = 60000): Promise<void> {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    const next = exactButton(page, UI.next);
+    if ((await next.count()) > 0 && (await next.getAttribute("aria-disabled")) !== "true") return;
+    await page.waitForTimeout(1000);
+  }
 }
 
 /**
@@ -340,7 +352,7 @@ export async function postListing(input: ListingInput): Promise<{ screenshot: Bu
   if (!priceAppears(review, input.price)) missing.push("price");
   if (missing.length) {
     throw new Error(
-      `Stopping before publish: the review page does not show the ${missing.join(" or ")} that was asked for. ` +
+      `Stopping before publish: the form preview does not show the ${missing.join(" or ")} that was asked for. ` +
         `Nothing was posted. Check the form and try again.`
     );
   }
@@ -359,13 +371,36 @@ export async function postListing(input: ListingInput): Promise<{ screenshot: Bu
  */
 export async function publishListing(): Promise<string> {
   const page = await getPage();
-  const publish = exactButton(page, UI.publish);
-  if ((await publish.count()) === 0) {
-    throw new Error(
+  const noDraft = () =>
+    new Error(
       "No draft is waiting to be published (currently at " +
         page.url() +
         "). A draft only survives while the browser stays open, so run create_listing again and publish without restarting in between."
     );
+
+  // create_listing leaves the filled form on screen; advance to the review step now.
+  const next = exactButton(page, UI.next);
+  if ((await next.count()) > 0) {
+    await waitForUploads(page);
+    await next.click({ timeout: 10000 });
+    await page.waitForTimeout(3000);
+  }
+
+  // Next can itself publish (see fillListing). If the create flow is gone
+  // already, report where we ended up instead of looking for a button.
+  if (!page.url().includes("/marketplace/create")) return page.url();
+
+  const publish = exactButton(page, UI.publish);
+  const deadline = Date.now() + 30000;
+  while ((await publish.count()) === 0 || (await publish.getAttribute("aria-disabled")) === "true") {
+    if (!page.url().includes("/marketplace/create")) return page.url();
+    if (Date.now() > deadline) {
+      if ((await publish.count()) === 0) throw noDraft();
+      // Present but disabled for 30s: most likely already publishing.
+      await page.waitForTimeout(5000);
+      return page.url();
+    }
+    await page.waitForTimeout(1000);
   }
   await publish.click({ timeout: 10000 });
   await page.waitForTimeout(5000);

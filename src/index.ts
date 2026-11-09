@@ -133,7 +133,7 @@ server.tool(
 
 server.tool(
   "create_listing",
-  "The normal way to list something. Fills the form and stops at the review step WITHOUT publishing, returning a screenshot. Show that screenshot to the seller and wait for their explicit approval, then call publish_listing in the same session (the draft lives only in the open browser and is lost if it closes). Before calling this, show the seller the title, price and description you propose. The price must come from the seller.",
+  "The normal way to list something. Fills the form and stops on it, BEFORE clicking Next, WITHOUT publishing, returning a screenshot of the filled form and Facebook's preview. Show that screenshot to the seller and wait for their explicit approval, then call publish_listing in the same session (the draft lives only in the open browser and is lost if it closes). Before calling this, show the seller the title, price and description you propose. The price must come from the seller.",
   {
     title: z.string(),
     price: z
@@ -173,7 +173,7 @@ server.tool(
 
 server.tool(
   "publish_listing",
-  "Publish the listing currently on the review step (created by create_listing). Call ONLY after the seller has seen the create_listing screenshot and explicitly approved publishing it. Returns the resulting URL.",
+  "Publish the draft left by create_listing: clicks Next, then Publish. Call ONLY after the seller has seen the create_listing screenshot and explicitly approved publishing it. Returns the resulting URL.",
   {},
   async () => {
     const url = await publishListing();
