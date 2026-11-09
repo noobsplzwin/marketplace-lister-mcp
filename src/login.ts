@@ -10,7 +10,7 @@ async function readAccountName(): Promise<string | undefined> {
   try {
     const page = await getPage();
     const name = await page.evaluate(() => {
-      const el = document.querySelector('[aria-label="Your profile"]') as HTMLElement | null;
+      const el = document.querySelector('[aria-label="Your profile"], [aria-label="Tu perfil"]') as HTMLElement | null;
       if (el?.textContent) return el.textContent.trim();
       const link = document.querySelector('a[href*="/me/"], a[aria-current="page"]') as HTMLElement | null;
       return link?.textContent?.trim() || undefined;
@@ -49,10 +49,23 @@ export async function smoothLogin(waitMs = 45000): Promise<LoginResult> {
 
   const deadline = Date.now() + waitMs;
   while (Date.now() < deadline) {
-    await page.waitForTimeout(2000);
-    if (await isLoggedIn()) {
-      await page.goto("https://www.facebook.com/", { waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => {});
-      return { status: "logged_in", account: await readAccountName(), message: "Login successful. Session saved to the dedicated profile — you won't need to do this again." };
+    await new Promise((r) => setTimeout(r, 2000));
+    try {
+      // After a relaunch the fresh window sits on about:blank; put the login page back.
+      const cur = await getPage();
+      if (cur.url() === "about:blank") {
+        await cur.goto("https://www.facebook.com/login", { waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => {});
+        await cur.bringToFront().catch(() => {});
+      }
+      if (await isLoggedIn()) {
+        const p = await getPage();
+        await p.goto("https://www.facebook.com/", { waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => {});
+        return { status: "logged_in", account: await readAccountName(), message: "Login successful. Session saved to the dedicated profile — you won't need to do this again." };
+      }
+    } catch {
+      // The tab or the whole browser went away mid-login (closed by the user,
+      // or Facebook swapped the tab during 2FA). getContext()/getPage() relaunch
+      // and re-acquire on the next pass, so keep waiting instead of failing.
     }
   }
   return {
