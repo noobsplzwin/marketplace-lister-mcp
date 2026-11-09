@@ -12,7 +12,10 @@ const server = new McpServer({
   version: "0.1.0",
 });
 
-const CONDITIONS = ["New", "Used - Like New", "Used - Good", "Used - Fair"] as const;
+const CONDITIONS = [
+  "New", "Used - Like New", "Used - Good", "Used - Fair",
+  "Nuevo", "Usado - Como nuevo", "Usado - Buen estado", "Usado - Aceptable",
+] as const;
 
 function img(buf: Buffer) {
   return { type: "image" as const, data: buf.toString("base64"), mimeType: "image/png" };
@@ -96,14 +99,14 @@ server.tool(
 
 server.tool(
   "post_listing",
-  "Post one item to Marketplace in a single step: uploads the photos, fills the form, checks the review page really shows the title and price it was given, then publishes. This is the normal way to list something. Call it only after the seller has seen the wording and price you propose and agreed to them; show them the text first, in the message, rather than posting and asking afterwards. The price must be the seller's own number, never an estimate. Prefer this over create_listing plus publish_listing, which leave a draft that exists only while the browser stays open and is lost if anything interrupts.",
+  "Fill AND publish in a single step, with no preview. Use this ONLY when the seller has explicitly said, in this conversation, that they do not need to see the filled-in form first. The default way to list something is create_listing (shows a screenshot of the filled form) followed by publish_listing after the seller approves that screenshot. Before either, show the seller the title, price and description in the message. The price must be the seller's own number, never an estimate.",
   {
     title: z.string(),
     price: z
       .union([z.string(), z.number()])
       .describe("The seller's own asking price. Ask them for it; do not infer, estimate, or derive it from comps."),
     description: z.string(),
-    category: z.string().describe('Marketplace category. If it is wrong the error lists every valid one, e.g. "Appliances", "Household", "Electronics & computers", "Toys & Games".'),
+    category: z.string().describe('Marketplace category exactly as the form shows it in the account\'s language. If it is wrong the error lists every valid one. English e.g. "Appliances", "Household"; Spanish e.g. "Electrodomésticos", "Hogar", "Muebles", "Venta de garaje", "Varios".'),
     condition: z.enum(CONDITIONS),
     folder: z.string().optional().describe("Folder holding this item's photos; every image in it is uploaded, sorted by filename."),
     photos: z.array(z.string()).optional().describe("Explicit photo paths (first is the cover), when picking specific files instead of a folder."),
@@ -130,14 +133,14 @@ server.tool(
 
 server.tool(
   "create_listing",
-  "Fill the form and stop at the review step without publishing, returning a screenshot. Use post_listing instead unless the seller specifically wants to see the filled-in page before it goes live: the draft this leaves behind lives only in the open browser and is lost if the session ends, the browser closes, or anything else interrupts. When you do use it, call publish_listing straight after, in the same session. The price must come from the seller.",
+  "The normal way to list something. Fills the form and stops at the review step WITHOUT publishing, returning a screenshot. Show that screenshot to the seller and wait for their explicit approval, then call publish_listing in the same session (the draft lives only in the open browser and is lost if it closes). Before calling this, show the seller the title, price and description you propose. The price must come from the seller.",
   {
     title: z.string(),
     price: z
       .union([z.string(), z.number()])
       .describe("The seller's own asking price. Ask them for it; do not infer, estimate, or derive it from comps."),
     description: z.string(),
-    category: z.string().describe('Marketplace category, e.g. "Appliances", "Household", "Furniture"'),
+    category: z.string().describe('Marketplace category as the form shows it, e.g. "Appliances" / "Electrodomésticos", "Household" / "Hogar", "Furniture" / "Muebles"'),
     condition: z.enum(CONDITIONS),
     folder: z
       .string()
@@ -170,7 +173,7 @@ server.tool(
 
 server.tool(
   "publish_listing",
-  "Publish the listing currently on the review step (created by create_listing). Only call after the review screenshot has been confirmed. Returns the resulting URL.",
+  "Publish the listing currently on the review step (created by create_listing). Call ONLY after the seller has seen the create_listing screenshot and explicitly approved publishing it. Returns the resulting URL.",
   {},
   async () => {
     const url = await publishListing();

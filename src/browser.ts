@@ -35,17 +35,34 @@ async function launch(channel?: string): Promise<BrowserContext> {
   });
 }
 
-/** A cached context is useless once its browser is gone: closed by the user,
- *  crashed, or killed. Detect that and relaunch rather than handing back a
- *  dead handle, which otherwise breaks every later call until a restart. */
+/**
+ * Whether the cached context's browser is still running. Tracked through the
+ * context's own "close" event rather than by evaluating script in a page: a
+ * page that is mid-navigation (e.g. right after the user submits the login
+ * form) rejects evaluate(), and treating that as a dead browser used to close
+ * the window out from under the user while they were signing in.
+ */
+let closed = true;
+
 async function isAlive(c: BrowserContext): Promise<boolean> {
+  if (closed) return false;
   try {
-    const p = c.pages()[0] ?? (await c.newPage());
-    await p.evaluate(() => 1);
+    if (c.pages().length === 0) await c.newPage();
     return true;
   } catch {
     return false;
   }
+}
+
+function track(c: BrowserContext): BrowserContext {
+  closed = false;
+  c.on("close", () => {
+    if (ctx === c) {
+      closed = true;
+      ctx = null;
+    }
+  });
+  return c;
 }
 
 export async function getContext(): Promise<BrowserContext> {
@@ -60,20 +77,20 @@ export async function getContext(): Promise<BrowserContext> {
   // Chromium is the last resort, and some Windows setups can't spawn it at all
   // ("spawn UNKNOWN"), which is why this walks a list instead of picking one.
   const order = CHANNEL ? [CHANNEL] : ["chrome", "msedge", undefined];
-  let lastErr: unknown;
+  const errors: string[] = [];
   for (const ch of order) {
     try {
-      ctx = await launch(ch);
+      ctx = track(await launch(ch));
       return ctx;
     } catch (e) {
-      lastErr = e;
+      errors.push(`[${ch ?? "bundled Chromium"}] ${String(e).split("\n")[0]}`);
     }
   }
   throw new Error(
     `Could not launch a browser (tried: ${order.map((c) => c ?? "bundled Chromium").join(", ")}).\n` +
       `Install Google Chrome, or run: npx playwright install chromium\n` +
       `To pin one, set FB_MCP_CHANNEL=chrome (or msedge).\n` +
-      `Last error: ${String(lastErr)}`
+      `Errors:\n${errors.join("\n")}`
   );
 }
 

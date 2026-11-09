@@ -8,6 +8,80 @@ const SELLING_URL = "https://www.facebook.com/marketplace/you/selling";
 
 const IMAGE_EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif"]);
 
+/**
+ * Form labels per UI language. Facebook renders the create form in the
+ * account's language, so every label is tried in each language in turn.
+ */
+const UI = {
+  title: ["Title", "Título"],
+  price: ["Price", "Precio"],
+  description: ["Description", "Descripción"],
+  category: ["Category", "Categoría"],
+  condition: ["Condition", "Estado"],
+  moreDetails: ["More details", "Más detalles"],
+  next: ["Next", "Siguiente"],
+  publish: ["Publish", "Publicar"],
+} as const;
+
+/** Each condition as Facebook names it in English and in Spanish. */
+const CONDITION_ALIASES: string[][] = [
+  ["New", "Nuevo"],
+  ["Used - Like New", "Usado - Como nuevo"],
+  ["Used - Good", "Usado - Buen estado"],
+  ["Used - Fair", "Usado - Aceptable"],
+];
+
+function conditionCandidates(condition: string): string[] {
+  const hit = CONDITION_ALIASES.find((a) => a.some((x) => x.toLowerCase() === condition.toLowerCase()));
+  return hit ?? [condition];
+}
+
+/** First locator among `label:has-text(<name>) <tag>` that exists on the page. */
+async function labelled(page: Page, names: readonly string[], tag: string, timeout = 10000) {
+  const deadline = Date.now() + timeout;
+  while (true) {
+    for (const n of names) {
+      const loc = page.locator(`label:has-text("${n}") ${tag}`).first();
+      if ((await loc.count()) > 0) return loc;
+    }
+    if (Date.now() > deadline) throw new Error(`Form field not found: ${names.join(" / ")}`);
+    await page.waitForTimeout(500);
+  }
+}
+
+/**
+ * A button whose whole visible text is exactly one of `names`. Exact on
+ * purpose: a substring match on "Publicar" also hits the paid "Promocionar
+ * tras publicar" toggle.
+ */
+function exactButton(page: Page, names: readonly string[]) {
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`^\\s*(${names.map(esc).join("|")})\\s*$`);
+  return page.locator("div[role=button]").filter({ hasText: re }).first();
+}
+
+/** Click the first visible button whose text is exactly one of `names`. */
+async function clickButton(page: Page, names: readonly string[], timeout = 10000): Promise<boolean> {
+  const deadline = Date.now() + timeout;
+  while (true) {
+    const loc = exactButton(page, names);
+    if ((await loc.count()) > 0 && (await loc.isVisible().catch(() => false))) {
+      await loc.click({ timeout });
+      return true;
+    }
+    if (Date.now() > deadline) return false;
+    await page.waitForTimeout(500);
+  }
+}
+
+/** "15000", "15.000", "$ 15.000" all match a price of 15000 regardless of separators. */
+export function priceAppears(text: string, price: string | number): boolean {
+  const digits = String(price).replace(/[.,](\d{1,2})$/, "").replace(/\D/g, "");
+  if (!digits) return true;
+  const re = new RegExp(`(^|\\D)${digits.split("").join("[.,\\s\\u00a0\\u202f]?")}(\\D|$)`);
+  return re.test(text);
+}
+
 export interface ScannedItem {
   folder: string;
   name: string;
@@ -150,37 +224,47 @@ async function gotoCreate(page: Page): Promise<void> {
  * is not there, report the options that are, so the caller can pick a real one
  * instead of guessing.
  */
-async function pickFromCombobox(page: Page, comboLabel: string, optionText: string): Promise<void> {
-  await page.click(`label[role=combobox]:has-text("${comboLabel}")`, { timeout: 15000 });
+async function pickFromCombobox(page: Page, comboLabels: readonly string[], optionTexts: string[]): Promise<void> {
+  const box = page.locator(comboLabels.map((l) => `label[role=combobox]:has-text("${l}")`).join(", ")).first();
+  await box.click({ timeout: 15000 });
   await page.waitForTimeout(1200);
 
+  const wanted = optionTexts.map((o) => o.toLowerCase());
   const seen = new Set<string>();
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 40; i++) {
     // Options are plain spans in the document, with no listbox wrapper to scope
     // to, so collect every short visible leaf span and match on text.
     const options: string[] = await page.evaluate(() =>
       [...document.querySelectorAll("span")]
         .filter((s) => s.offsetParent && !s.children.length)
         .map((s) => (s.textContent || "").trim())
-        .filter((t) => t.length > 0 && t.length < 40)
+        .filter((t) => t.length > 0 && t.length < 50)
     );
     options.forEach((o) => seen.add(o));
 
-    const match = options.find((o) => o.toLowerCase() === optionText.toLowerCase());
+    const match = options.find((o) => wanted.includes(o.toLowerCase()));
     if (match) {
-      await page.locator(`span:text-is("${match}")`).first().click({ timeout: 10000 });
+      await page.locator(`span:text-is(${JSON.stringify(match)})`).first().click({ timeout: 10000 });
       await page.waitForTimeout(800);
       return;
     }
 
-    // Scroll whatever actually scrolls: walk up from a known option until an
-    // ancestor has overflow. The popup markup carries no stable handle.
+    // Scroll the popup. Walk up from a known category option to the nearest
+    // ancestor that is an actual scroll container (overflow auto/scroll); a
+    // bare scrollHeight check stops at clipped text spans and scrolls nothing.
     const moved = await page.evaluate(() => {
       const anchor = [...document.querySelectorAll("span")].find(
-        (s) => s.offsetParent && !s.children.length && /^(Tools|Furniture|Household|Garden|Appliances)$/.test((s.textContent || "").trim())
+        (s) =>
+          s.offsetParent &&
+          !s.children.length &&
+          /^(Tools|Furniture|Household|Garden|Appliances|Herramientas|Muebles|Hogar|Jardinería|Electrodomésticos)$/.test(
+            (s.textContent || "").trim()
+          )
       );
       let el: HTMLElement | null = (anchor?.parentElement as HTMLElement) ?? null;
-      while (el && el.scrollHeight <= el.clientHeight + 4) el = el.parentElement;
+      while (el && !(el.scrollHeight > el.clientHeight + 4 && /auto|scroll/.test(getComputedStyle(el).overflowY))) {
+        el = el.parentElement;
+      }
       if (!el) return false;
       const before = el.scrollTop;
       el.scrollTop += 220;
@@ -190,8 +274,9 @@ async function pickFromCombobox(page: Page, comboLabel: string, optionText: stri
     if (!moved && i > 3) break;
   }
 
+  await page.keyboard.press("Escape").catch(() => {});
   throw new Error(
-    `"${optionText}" is not an option for ${comboLabel}. Available: ${[...seen].join(", ") || "(none found)"}`
+    `"${optionTexts[0]}" is not an option for ${comboLabels.join(" / ")}. Available: ${[...seen].join(", ") || "(none found)"}`
   );
 }
 
@@ -212,15 +297,22 @@ export async function fillListing(input: ListingInput): Promise<Buffer> {
   await page.setInputFiles(fileInput, input.photos, { timeout: 20000 });
   await page.waitForTimeout(3500);
 
-  await page.fill('label:has-text("Title") input', input.title, { timeout: 10000 });
-  await page.fill('label:has-text("Price") input', String(input.price), { timeout: 10000 });
-  await page.fill('label:has-text("Description") textarea', input.description, { timeout: 10000 });
+  await (await labelled(page, UI.title, "input")).fill(input.title);
+  await (await labelled(page, UI.price, "input")).fill(String(input.price).replace(/[^\d]/g, ""));
 
-  await pickFromCombobox(page, "Category", input.category);
-  await pickFromCombobox(page, "Condition", input.condition);
+  await pickFromCombobox(page, UI.category, [input.category]);
+  await pickFromCombobox(page, UI.condition, conditionCandidates(input.condition));
+
+  // The description lives in a collapsed "More details" section on newer
+  // versions of the form. Expand it only if the textarea is not already there.
+  const desc = await labelled(page, UI.description, "textarea", 1500).catch(() => null);
+  if (!desc) await clickButton(page, UI.moreDetails, 5000);
+  await (await labelled(page, UI.description, "textarea")).fill(input.description);
 
   // Advance to the audience / review step.
-  await page.click('div[role=button]:has-text("Next"), span:text-is("Next")', { timeout: 10000 });
+  if (!(await clickButton(page, UI.next))) {
+    throw new Error(`Could not find the ${UI.next.join(" / ")} button. Nothing was posted.`);
+  }
   await page.waitForTimeout(2500);
 
   return await page.screenshot();
@@ -243,10 +335,9 @@ export async function postListing(input: ListingInput): Promise<{ screenshot: Bu
 
   const page = await getPage();
   const review = await page.innerText("body");
-  const priceText = String(input.price).replace(/[^0-9.]/g, "");
   const missing: string[] = [];
   if (!review.includes(input.title.slice(0, 40))) missing.push("title");
-  if (priceText && !review.includes(priceText)) missing.push("price");
+  if (!priceAppears(review, input.price)) missing.push("price");
   if (missing.length) {
     throw new Error(
       `Stopping before publish: the review page does not show the ${missing.join(" or ")} that was asked for. ` +
@@ -268,7 +359,7 @@ export async function postListing(input: ListingInput): Promise<{ screenshot: Bu
  */
 export async function publishListing(): Promise<string> {
   const page = await getPage();
-  const publish = page.locator('div[role=button]:has-text("Publish"), span:text-is("Publish")').first();
+  const publish = exactButton(page, UI.publish);
   if ((await publish.count()) === 0) {
     throw new Error(
       "No draft is waiting to be published (currently at " +

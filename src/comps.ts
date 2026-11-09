@@ -67,11 +67,26 @@ export function buildSearchUrl(q: CompsQuery): string {
   return `https://www.facebook.com/marketplace/search/?${p.toString()}`;
 }
 
-/** Parse "CA$1,234" / "$85" / "Free" out of a card's text. */
+/**
+ * Parse "CA$1,234" / "$85" / "$ 15.000" / "ARS 15.000,50" / "Free" / "Gratis"
+ * out of a card's text. Thousands separators may be "," (US) or "." (AR/ES):
+ * a separator followed by exactly three digits is a thousands separator,
+ * anything else is the decimal point.
+ */
 export function parsePrice(text: string): { price: number | null; priceText: string } {
-  const m = text.match(/(?:CA|US|C|A)?\$\s?([\d][\d,]*(?:\.\d{1,2})?)/);
-  if (m) return { price: Number(m[1].replace(/,/g, "")), priceText: m[0].trim() };
-  if (/^\s*Free\b/im.test(text)) return { price: 0, priceText: "Free" };
+  const m = text.match(/(?:(?:CA|US|C|A|AR|ARS|CLP|MX)\s?\$|\$|ARS)\s?(\d[\d.,\u00a0\u202f]*)/);
+  if (m) {
+    let raw = m[1].replace(/[\u00a0\u202f]/g, "").replace(/[.,]$/, "");
+    const lastSep = Math.max(raw.lastIndexOf("."), raw.lastIndexOf(","));
+    let decimals = "";
+    if (lastSep >= 0 && raw.length - lastSep - 1 !== 3) {
+      decimals = raw.slice(lastSep + 1);
+      raw = raw.slice(0, lastSep);
+    }
+    const n = Number(raw.replace(/[.,]/g, "") + (decimals ? "." + decimals : ""));
+    return { price: Number.isFinite(n) ? n : null, priceText: m[0].trim() };
+  }
+  if (/^\s*(Free|Gratis)\b/im.test(text)) return { price: 0, priceText: "Free" };
   return { price: null, priceText: "" };
 }
 
@@ -80,7 +95,7 @@ export function parsePrice(text: string): { price: number | null; priceText: str
  * missing this makes half the comps come back titled "Just listed".
  */
 const BADGE =
-  /^(just listed|new listing|new|sold|pending|reserved|free|save(d)?|shipping available|local pickup|free shipping|sponsored|only \d+ left|\d+ (km|mi|miles|kilometres) away)$/i;
+  /^(just listed|new listing|new|sold|pending|reserved|free|save(d)?|shipping available|local pickup|free shipping|sponsored|only \d+ left|\d+ (km|mi|miles|kilometres) away|recién publicado|nuevo|vendido|pendiente|reservado|gratis|guardado|envío disponible|retiro en persona|envío gratis|publicidad|patrocinado|a \d+ km)$/i;
 
 /**
  * Turn one result card's innerText into a Comp. Cards look roughly like:
@@ -96,20 +111,20 @@ export function parseCard(text: string, url: string): Comp | null {
     .filter(Boolean);
   if (lines.length === 0) return null;
 
-  const sold = lines.some((l) => /^sold\b/i.test(l));
+  const sold = lines.some((l) => /^(sold|vendido)\b/i.test(l));
   const { price, priceText } = parsePrice(text);
 
   // Title = first line that is neither a price nor a badge. Prefer the longest
   // remaining candidate when several qualify — FB puts the real title first,
   // but short fragments occasionally precede it.
   const candidates = lines.filter(
-    (l) => l !== priceText && !BADGE.test(l) && !/^(?:CA|US|C|A)?\$\s?[\d]/.test(l) && l.length > 2
+    (l) => l !== priceText && !BADGE.test(l) && !/^(?:(?:CA|US|C|A|AR|ARS|CLP|MX)\s?\$|\$|ARS)\s?\d/.test(l) && l.length > 2
   );
   if (candidates.length === 0) return null;
 
   // Last line is usually the location ("Portland, OR"); don't let it become the title.
   const last = lines[lines.length - 1];
-  const looksLikeLocation = /^[A-Za-z .'-]+,\s*[A-Z]{2}$/.test(last);
+  const looksLikeLocation = /^[\p{L} .'-]+,\s*[\p{L} .'-]{2,}$/u.test(last);
   const titlePool = looksLikeLocation ? candidates.filter((c) => c !== last) : candidates;
   const title = titlePool[0] ?? candidates[0];
   if (!title) return null;
@@ -124,12 +139,15 @@ export function parseCard(text: string, url: string): Comp | null {
   };
 }
 
-const STOPWORDS = new Set(["the", "a", "an", "and", "for", "with", "of", "in", "size", "new", "used"]);
+const STOPWORDS = new Set([
+  "the", "a", "an", "and", "for", "with", "of", "in", "size", "new", "used",
+  "el", "la", "los", "las", "un", "una", "y", "de", "del", "con", "para", "en", "por", "nuevo", "nueva", "usado", "usada",
+]);
 
 export function queryTerms(query: string): string[] {
   return query
     .toLowerCase()
-    .split(/[^a-z0-9]+/)
+    .split(/[^\p{L}\p{N}]+/u)
     .filter((t) => t.length > 1 && !STOPWORDS.has(t));
 }
 
