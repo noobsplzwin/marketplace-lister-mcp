@@ -214,10 +214,131 @@ export async function fillListing(input: ListingInput): Promise<Buffer> {
 
   await page.fill('label:has-text("Title") input', input.title, { timeout: 10000 });
   await page.fill('label:has-text("Price") input', String(input.price), { timeout: 10000 });
-  await page.fill('label:has-text("Description") textarea', input.description, { timeout: 10000 });
 
+  // CRITICAL: Category and Condition MUST be selected FIRST before Description becomes available
   await pickFromCombobox(page, "Category", input.category);
+  await page.waitForTimeout(1500);
   await pickFromCombobox(page, "Condition", input.condition);
+  await page.waitForTimeout(1500);
+
+  // NOW fill description (field appears after category/condition are set)
+  // Facebook's description textarea selector has changed over time; try multiple patterns
+  const descriptionSelectors = [
+    'label:has-text("Description") textarea',
+    'label:has-text("escription") textarea',
+    'textarea[placeholder*="escription" i]',
+    'textarea[aria-label*="escription" i]',
+    'div[role="textbox"]',
+    'textarea[name="description"]',
+    'textarea[data-testid*="escription" i]',
+    // Modern Facebook Marketplace (2024+) uses contenteditable divs
+    'div[contenteditable="true"][data-lexical-editor="true"]',
+    'div[contenteditable="true"][role="textbox"]',
+    'div[contenteditable="true"]',
+    // Try to find by the label and then the next sibling
+    'label:has-text("Description") + div [contenteditable="true"]',
+    'label:has-text("Description") + div textarea',
+    // Sometimes it's nested deeper
+    'label:has-text("Description") ~ div [contenteditable="true"]',
+    'label:has-text("Description") ~ div textarea',
+    // More specific selectors for current FB layout
+    'div[contenteditable="true"][data-text="true"]',
+    'div[contenteditable="true"][aria-multiline="true"]',
+    'div[contenteditable="true"][data-placeholder*="escription" i]',
+    // Try to find by the label and then input
+    'label:has-text("Description") + * [contenteditable="true"]',
+    'label:has-text("escription") + * [contenteditable="true"]',
+    // Look for the description input by its id pattern
+    'textarea[id*="escription" i]',
+    'div[contenteditable="true"][id*="escription" i]',
+    // Generic fallback - any contenteditable div inside a form
+    'form [contenteditable="true"]',
+    'form textarea',
+  ];
+  let filled = false;
+  for (const sel of descriptionSelectors) {
+    try {
+      await page.fill(sel, input.description, { timeout: 3000 });
+      filled = true;
+      break;
+    } catch {
+      // try next selector
+    }
+  }
+  if (!filled) {
+    // Last resort: use JavaScript to find and fill the description field
+    try {
+      const result = await page.evaluate((desc) => {
+        // Find all textareas and contenteditables
+        const textareas = [...document.querySelectorAll('textarea')];
+        const contenteditables = [...document.querySelectorAll('[contenteditable="true"]')];
+        const all = [...textareas, ...contenteditables];
+        
+        // Filter for likely description fields
+        const candidates = all.filter(el => {
+          const label = el.closest('label')?.textContent || '';
+          const placeholder = el.getAttribute('placeholder') || '';
+          const ariaLabel = el.getAttribute('aria-label') || '';
+          const id = el.id || '';
+          const name = el.getAttribute('name') || '';
+          const role = el.getAttribute('role') || '';
+          
+          const text = (label + placeholder + ariaLabel + id + name + role).toLowerCase();
+          return text.includes('description') || text.includes('escription');
+        });
+        
+        if (candidates.length > 0) {
+          const target = candidates[candidates.length - 1]; // Use the last one
+          if (target.tagName === 'TEXTAREA') {
+            (target as HTMLTextAreaElement).value = desc;
+            target.dispatchEvent(new Event('input', { bubbles: true }));
+            target.dispatchEvent(new Event('change', { bubbles: true }));
+          } else {
+            target.textContent = desc;
+            target.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+          return true;
+        }
+        return false;
+      }, input.description);
+      
+      if (result) {
+        filled = true;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  if (!filled) {
+    // DEBUG: Log all textareas and contenteditables on the page
+    try {
+      const debug = await page.evaluate(() => {
+        const textareas = [...document.querySelectorAll('textarea')];
+        const contenteditables = [...document.querySelectorAll('[contenteditable="true"]')];
+        const all = [...textareas, ...contenteditables];
+        return all.map((el, i) => ({
+          index: i,
+          tag: el.tagName,
+          id: el.id,
+          class: el.className,
+          placeholder: el.getAttribute('placeholder'),
+          ariaLabel: el.getAttribute('aria-label'),
+          name: el.getAttribute('name'),
+          role: el.getAttribute('role'),
+          contenteditable: el.getAttribute('contenteditable'),
+          dataTestId: el.getAttribute('data-testid'),
+          dataLexicalEditor: el.getAttribute('data-lexical-editor'),
+          label: el.closest('label')?.textContent?.trim(),
+          parentClass: el.parentElement?.className,
+          isVisible: (el as HTMLElement).offsetParent !== null,
+        }));
+      });
+      console.error("DEBUG - All textareas and contenteditables:", JSON.stringify(debug, null, 2));
+    } catch (e) {
+      console.error("DEBUG error:", e);
+    }
+    throw new Error("Could not find description textarea with any known selector");
+  }
 
   // Advance to the audience / review step.
   await page.click('div[role=button]:has-text("Next"), span:text-is("Next")', { timeout: 10000 });
