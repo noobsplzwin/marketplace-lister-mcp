@@ -198,5 +198,16 @@ process.on("SIGTERM", async () => {
 });
 
 const transport = new StdioServerTransport();
-await server.connect(transport);
-console.error("marketplace-lister-mcp running on stdio");
+await server.connect(transport).catch((err) => {
+    console.error("Failed to connect transport:", err);
+    process.exit(1);
+});
+console.error("marketplace-lister-mcp running on stdio (v2-fixed)");
+// Keep process alive
+setInterval(() => {}, 1000);
+// Log stdin status
+process.stdin.on('end', () => console.error('stdin ended'));
+process.stdin.on('close', () => console.error('stdin closed'));
+process.on('SIGTERM', () => console.error('SIGTERM received'));
+process.on('SIGINT', () => console.error('SIGINT received'));
+process.on('exit', (code) => console.error('Process exiting with code:', code));
